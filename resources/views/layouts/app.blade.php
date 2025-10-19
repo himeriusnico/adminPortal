@@ -21,6 +21,8 @@
     <!-- DataTables CSS Basic -->
     <link href="{{ asset('vendor/datatables/css/dataTables.bootstrap5.min.css') }}" rel="stylesheet">
 
+    <link rel="stylesheet" href="{{ asset('css/auth.css') }}">
+
     <!-- Custom CSS untuk dashboard -->
     @if (request()->is('dashboard') || request()->is('dashboard/*'))
         <link href="{{ asset('css/dashboard.css') }}" rel="stylesheet">
@@ -82,24 +84,30 @@
 
 <body>
     <!-- Header -->
-    @include('layouts.partials.header')
+    {{-- @include('layouts.partials.header') --}}
 
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar (hanya tampil jika user sudah login) -->
-            @auth
+    @if (!request()->is('login') && !request()->is('register') && !request()->is('/'))
+        @include('layouts.partials.header')
+    @endif
+
+    @auth
+        <!-- Show sidebar layout only for authenticated users -->
+        <div class="container-fluid">
+            <div class="row">
                 @include('layouts.partials.sidebar')
-            @endauth
-
-            <!-- Main Content -->
-            <main class="@auth col-md-9 ms-sm-auto col-lg-10 px-md-4 @else col-12 @endauth main-content">
-                <div class="content-container">
-                    @yield('content')
-                </div>
-            </main>
+                <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                    <div class="content-container">
+                        @yield('content')
+                    </div>
+                </main>
+            </div>
         </div>
-    </div>
-
+    @else
+        <!-- Full-width layout for auth pages (login/register) -->
+        <main style="padding: 0; margin: 0;">
+            @yield('content')
+        </main>
+    @endauth
     <!-- Footer -->
     @include('layouts.partials.footer')
 

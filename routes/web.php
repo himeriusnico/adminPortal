@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\StudentController;
+
 use Illuminate\Support\Facades\Route;
 
 // Route untuk tamu
@@ -12,10 +13,10 @@ Route::get('/', function () {
 })->name('home');
 
 // Autentikasi
-Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
-Route::post('/register', [RegisteredUserController::class, 'store']);
-Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
-Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+Route::get('/register', [RegisterController::class, 'create'])->name('register');
+Route::post('/register', [RegisterController::class, 'store']);
+Route::get('/login', [LoginController::class, 'create'])->name('login');
+Route::post('/login', [LoginController::class, 'store']);
 
 // Route yang perlu login
 Route::middleware('auth')->group(function () {
@@ -25,7 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('students', StudentController::class);
 
     // Logout
-    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
     // Route berdasarkan role (akan dihandle di controller nanti)
     Route::get('/institutions', function () {
