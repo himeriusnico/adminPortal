@@ -9,13 +9,13 @@ class Institution extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'email', 'public_key', 'ca_cert'];
+    protected $fillable = ['name', 'email', 'alamat', 'public_key', 'private_key_path', 'ca_cert'];
 
     public function students()
     {
         return $this->hasMany(Student::class);
     }
-
+        
     public function pegawais()
     {
         return $this->hasMany(Pegawai::class);

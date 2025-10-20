@@ -11,7 +11,8 @@
             <!-- Menu berdasarkan tipe pengguna -->
             @if (Auth::user()->user_type === 'admin')
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->is('institutions*') ? 'active' : '' }}" href="#">
+                    <a class="nav-link {{ request()->is('institutions*') ? 'active' : '' }}"
+                        href="{{ route('institutions.index') }}">
                         <i class="bi bi-building me-2"></i>
                         Institusi
                     </a>
