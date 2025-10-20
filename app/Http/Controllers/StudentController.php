@@ -23,14 +23,26 @@ class StudentController extends Controller
      */
     public function index()
     {
-        $students = Student::with(['user', 'institution'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        $user = auth()->user();
 
-        // Stats untuk cards
-        $activeStudents = Student::where('status', 'active')->count();
-        $graduatedStudents = Student::where('status', 'graduated')->count();
-        $inactiveStudents = Student::where('status', 'inactive')->count();
+        // Base query
+        $query = Student::with(['user', 'institution'])->orderBy('created_at', 'desc');
+
+        // Jika user adalah pegawai, filter berdasarkan institution_id
+        if ($user->user_type === 'pegawai') {
+            $pegawai = \App\Models\Pegawai::where('users_id', $user->id)->first();
+            if ($pegawai) {
+                $query->where('institution_id', $pegawai->institution_id);
+            }
+        }
+
+        // Ambil data mahasiswa
+        $students = $query->get(); // untuk DataTables, ambil semua (tanpa paginate)
+
+        // Stats untuk cards (hitung berdasarkan query yg sama)
+        $activeStudents = (clone $query)->where('status', 'active')->count();
+        $graduatedStudents = (clone $query)->where('status', 'graduated')->count();
+        $inactiveStudents = (clone $query)->where('status', 'inactive')->count();
 
         return view('students.index', compact(
             'students',
@@ -39,6 +51,7 @@ class StudentController extends Controller
             'inactiveStudents'
         ));
     }
+
 
     /**
      * Menampilkan form untuk membuat mahasiswa baru.

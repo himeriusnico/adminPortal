@@ -21,7 +21,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <h5 class="card-title">Total Mahasiswa</h5>
-                            <h2 class="mb-0">{{ $students->total() }}</h2>
+                            <h2 class="mb-0">{{ $students->count() }}</h2>
                         </div>
                         <div class="align-self-center">
                             <i class="bi bi-people display-6"></i>
@@ -110,7 +110,8 @@
                     <tbody>
                         @forelse($students as $student)
                             <tr>
-                                <td>{{ $loop->iteration + ($students->currentPage() - 1) * $students->perPage() }}</td>
+                                {{-- <td>{{ $loop->iteration + ($students->currentPage() - 1) * $students->perPage() }}</td> --}}
+                                <td>{{ $loop->iteration }}</td>
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div
@@ -179,7 +180,7 @@
             </div>
 
             <!-- Pagination -->
-            @if ($students->hasPages())
+            {{-- @if ($students->hasPages())
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <div class="text-muted">
                         Menampilkan {{ $students->firstItem() }} - {{ $students->lastItem() }} dari
@@ -189,7 +190,7 @@
                         {{ $students->links() }}
                     </nav>
                 </div>
-            @endif
+            @endif --}}
         </div>
     </div>
 
@@ -260,6 +261,30 @@
                 rows.forEach(row => {
                     const text = row.textContent.toLowerCase();
                     row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            });
+
+            document.addEventListener('DOMContentLoaded', function() {
+                // Inisialisasi DataTables
+                const table = new DataTable('#studentsTable', {
+                    responsive: true,
+                    pageLength: 10,
+                    lengthMenu: [5, 10, 25, 50],
+                    language: {
+                        search: "Cari:",
+                        lengthMenu: "Tampilkan _MENU_ entri",
+                        info: "Menampilkan _START_ - _END_ dari _TOTAL_ mahasiswa",
+                        paginate: {
+                            previous: "Sebelumnya",
+                            next: "Berikutnya"
+                        },
+                        emptyTable: "Tidak ada data mahasiswa yang tersedia"
+                    },
+                    columnDefs: [{
+                            orderable: false,
+                            targets: [8]
+                        } // Kolom aksi tidak bisa di-sort
+                    ]
                 });
             });
 

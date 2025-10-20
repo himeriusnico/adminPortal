@@ -27,7 +27,8 @@
 
             @if (in_array(Auth::user()->user_type, ['admin', 'pegawai']))
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->is('students*') ? 'active' : '' }}" href="#">
+                    <a class="nav-link {{ request()->is('students*') ? 'active' : '' }}"
+                        href="{{ route('students.index') }}">
                         <i class="bi bi-person-badge me-2"></i>
                         Mahasiswa
                     </a>
