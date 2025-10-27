@@ -14,6 +14,7 @@ class Student extends Model
         'user_id', 
         'institution_id', 
         'student_id', 
+        'phone',
         'program_study', 
         'faculty', 
         'entry_year', 

@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Pegawai;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class StudentController extends Controller
 {
@@ -82,8 +85,37 @@ class StudentController extends Controller
         // 2. Create student record
         // 3. Attach to institution based on logged-in user
 
-        return redirect()->route('students.index')
-            ->with('success', 'Mahasiswa berhasil ditambahkan.');
+        $user = auth()->user();
+        $pegawai = Pegawai::where('users_id', $user->id)->first();
+
+        if (!$pegawai) {
+            return response()->json(['error' => 'Pegawai Tidak Ditemukan.'], 403);
+        }
+
+        $newUser = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make('11111111'), // Sementara ini
+            // 'password' => bcrypt('defaultpassword'), 
+            'user_type' => 'student',
+        ]);
+
+        $student = Student::create([
+            'user_id' => $newUser->id,
+            'institution_id' => $pegawai->institution_id, // dari pegawai
+            'student_id' => $validated['student_id'],
+            'program_study' => $validated['program_study'],
+            'faculty' => $validated['faculty'],
+            'entry_year' => $validated['entry_year'],
+            'phone' => $validated['phone'] ?? null,
+            'status' => 'active',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mahasiswa dan user berhasil dibuat.',
+            'student' => $student,
+        ]);
     }
 
     /**
