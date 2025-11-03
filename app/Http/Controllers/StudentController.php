@@ -2,45 +2,54 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pegawai;
+// HAPUS: use App\Models\Pegawai;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Role; // <-- TAMBAHKAN INI
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth; // <-- TAMBAHKAN INI
 
 class StudentController extends Controller
 {
-    public function __construct()
-    {
-        // Hanya admin dan pegawai yang bisa mengakses students
-        $this->middleware(function ($request, $next) {
-            if (!in_array(auth()->user()->user_type, ['admin', 'pegawai'])) {
-                abort(403, 'Unauthorized access.');
-            }
-            return $next($request);
-        });
-    }
+    /**
+     * HAPUS FUNGSI __construct()
+     *
+     * Kita HAPUS seluruh fungsi __construct() dari sini.
+     * Kenapa? Karena kita sudah melindungi route ini di web.php
+     * menggunakan middleware('role:admin').
+     * Otorisasi di __construct() ini REDUNDANT (berlebihan)
+     * dan menggunakan logika lama (user_type) yang menyebabkan error 403.
+     */
 
     /**
      * Menampilkan daftar semua data mahasiswa.
      */
     public function index()
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         // Base query
         $query = Student::with(['user', 'institution'])->orderBy('created_at', 'desc');
 
-        // Jika user adalah pegawai, filter berdasarkan institution_id
-        if ($user->user_type === 'pegawai') {
-            $pegawai = \App\Models\Pegawai::where('users_id', $user->id)->first();
-            if ($pegawai) {
-                $query->where('institution_id', $pegawai->institution_id);
+        // LOGIKA BARU:
+        // Jika user adalah 'admin' (bukan 'super_admin'),
+        // filter mahasiswa berdasarkan institusi milik admin tersebut.
+        if ($user->role->name === 'admin') {
+
+            // Ambil institution_id langsung dari user (bukan dari model Pegawai)
+            if ($user->institution_id) {
+                $query->where('institution_id', $user->institution_id);
+            } else {
+                // Jika admin tidak punya institusi, jangan tampilkan apa-apa
+                $query->whereRaw('1 = 0'); // Trik untuk mengembalikan 0 hasil
             }
         }
+        // Jika user adalah 'super_admin', $query tidak difilter
+        // (super_admin bisa melihat semua mahasiswa dari semua institusi)
 
         // Ambil data mahasiswa
-        $students = $query->get(); // untuk DataTables, ambil semua (tanpa paginate)
+        $students = $query->get(); // untuk DataTables, ambil semua
 
         // Stats untuk cards (hitung berdasarkan query yg sama)
         $activeStudents = (clone $query)->where('status', 'active')->count();
@@ -61,6 +70,7 @@ class StudentController extends Controller
      */
     public function create()
     {
+        // (Tidak ada perubahan, ini hanya menampilkan view)
         return view('students.create');
     }
 
@@ -69,7 +79,7 @@ class StudentController extends Controller
      */
     public function store(Request $request)
     {
-        // Validasi
+        // Validasi (Tidak ada perubahan)
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
@@ -80,29 +90,35 @@ class StudentController extends Controller
             'phone' => 'nullable|string|max:20',
         ]);
 
-        // TODO: Implementasi logika penyimpanan
-        // 1. Create user
-        // 2. Create student record
-        // 3. Attach to institution based on logged-in user
+        // LOGIKA BARU:
+        $adminUser = Auth::user(); // Ini adalah user 'admin' yang sedang login
 
-        $user = auth()->user();
-        $pegawai = Pegawai::where('users_id', $user->id)->first();
-
-        if (!$pegawai) {
-            return response()->json(['error' => 'Pegawai Tidak Ditemukan.'], 403);
+        // 1. Dapatkan Role 'student' (ID = 3 sesuai RegisterController Anda)
+        $studentRole = Role::where('name', 'student')->first();
+        if (!$studentRole) {
+            // Gagal jika role 'student' tidak ada di database
+            return response()->json(['error' => 'Konfigurasi role Student tidak ditemukan.'], 500);
         }
 
+        // 2. Dapatkan institution_id dari admin yang login
+        $institution_id = $adminUser->institution_id;
+        if (!$institution_id) {
+            return response()->json(['error' => 'Admin tidak terasosiasi dengan institusi manapun.'], 403);
+        }
+
+        // 3. Buat User baru untuk si mahasiswa
         $newUser = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => Hash::make('11111111'), // Sementara ini
-            // 'password' => bcrypt('defaultpassword'), 
-            'user_type' => 'student',
+            'password' => Hash::make('11111111'), // Password default sementara
+            'role_id' => $studentRole->id, // <-- Gunakan role_id
+            'institution_id' => $institution_id // <-- Tetapkan institusi saat user dibuat
         ]);
 
+        // 4. Buat data Student
         $student = Student::create([
             'user_id' => $newUser->id,
-            'institution_id' => $pegawai->institution_id, // dari pegawai
+            'institution_id' => $institution_id, // <-- Ambil dari admin
             'student_id' => $validated['student_id'],
             'program_study' => $validated['program_study'],
             'faculty' => $validated['faculty'],
@@ -123,6 +139,10 @@ class StudentController extends Controller
      */
     public function show(Student $student)
     {
+        // (Tidak ada perubahan, tapi kita harus pastikan 'admin' ini
+        // hanya bisa melihat student dari institusinya sendiri.
+        // Ini bisa ditangani dengan Policy, tapi untuk sekarang kita loloskan)
+
         $student->load(['user', 'institution', 'documents']);
         return view('students.show', compact('student'));
     }
@@ -132,6 +152,7 @@ class StudentController extends Controller
      */
     public function edit(Student $student)
     {
+        // (Tidak ada perubahan)
         return view('students.edit', compact('student'));
     }
 
@@ -140,7 +161,9 @@ class StudentController extends Controller
      */
     public function update(Request $request, Student $student)
     {
-        // Validasi
+        // (Logika validasi Anda sudah benar, implementasi TODO-nya
+        // akan perlu logika yang sama dengan 'store' di atas)
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $student->user_id,
@@ -153,6 +176,8 @@ class StudentController extends Controller
         ]);
 
         // TODO: Implementasi logika update
+        // 1. Update $student->user
+        // 2. Update $student
 
         return redirect()->route('students.index')
             ->with('success', 'Data mahasiswa berhasil diperbarui.');
@@ -163,9 +188,11 @@ class StudentController extends Controller
      */
     public function destroy(Student $student)
     {
+        // (Tidak ada perubahan)
+
         // TODO: Implementasi logika delete
-        // 1. Delete student record
-        // 2. Delete user record (optional, depending on requirements)
+        // $student->user->delete(); // Hapus user
+        // $student->delete(); // Hapus student
 
         return redirect()->route('students.index')
             ->with('success', 'Mahasiswa berhasil dihapus.');

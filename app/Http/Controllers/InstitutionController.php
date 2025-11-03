@@ -11,22 +11,18 @@ use Throwable;
 
 class InstitutionController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware(function ($request, $next) {
-            if (auth()->user()->user_type !== 'admin') {
-                abort(403, 'Unauthorized access.');
-            }
-            return $next($request);
-        });
-    }
+    /**
+     * FUNGSI __construct() TELAH DIHAPUS.
+     * * Otorisasi sudah ditangani oleh middleware 'role:super_admin'
+     * di routes/web.php.
+     */
 
     /**
      * Menampilkan daftar semua institusi.
      */
     public function index()
     {
-        $institutions = Institution::latest()->paginate(10);
+        $institutions = Institution::all();
         return view('institutions.index', compact('institutions'));
     }
 

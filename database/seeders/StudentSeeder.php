@@ -12,26 +12,31 @@ class StudentSeeder extends Seeder
     public function run()
     {
         $faker = Faker::create();
-        // Ambil semua users yang role student (akan kita generate sendiri)
-        for ($i = 1; $i <= 10; $i++) {
-            $user = User::create([
-                'name' => $faker->name,
-                'email' => "student{$i}@example.com",
-                'password' => bcrypt('password'),
-                'role_id' => 2,
-                'institution_id' => $i,
-            ]);
 
-            Student::create([
-                'user_id' => $user->id,
-                'institution_id' => $i,
-                'student_id' => '2401' . str_pad($i, 4, '0', STR_PAD_LEFT),
-                'faculty_id' => $i % 5 + 1,
-                'program_study_id' => $i % 5 + 1,
-                'phone' => $faker->phoneNumber,
-                'entry_year' => $faker->year($max = 'now'),
-                'status' => 'active',
-            ]);
+        // Misal ada 5 institusi
+        $totalInstitutions = 5;
+
+        for ($inst = 1; $inst <= $totalInstitutions; $inst++) {
+            for ($i = 1; $i <= 5; $i++) { // 5 mahasiswa per institusi
+                $user = User::create([
+                    'name' => $faker->name,
+                    'email' => "student{$inst}_{$i}@example.com",
+                    'password' => bcrypt('password'),
+                    'role_id' => 3, // student = 3
+                    'institution_id' => $inst,
+                ]);
+
+                Student::create([
+                    'user_id' => $user->id,
+                    'institution_id' => $inst,
+                    'student_id' => '2401' . str_pad(($inst * 10 + $i), 4, '0', STR_PAD_LEFT),
+                    'faculty_id' => $i % 5 + 1,
+                    'program_study_id' => $i % 5 + 1,
+                    'phone' => $faker->phoneNumber,
+                    'entry_year' => $faker->year($max = 'now'),
+                    'status' => 'active',
+                ]);
+            }
         }
     }
 }

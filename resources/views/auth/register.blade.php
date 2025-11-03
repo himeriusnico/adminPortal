@@ -79,23 +79,6 @@
                             @enderror
                         </div>
 
-                        <!-- Dropdown Posisi -->
-                        <div class="form-group">
-                            <label for="position" class="form-label">Posisi / Jabatan</label>
-                            <select class="form-control @error('position') is-invalid @enderror" id="position"
-                                name="position" required>
-                                <option value="" disabled selected>-- Pilih Posisi Anda --</option>
-                                <option value="Staf Akademik" {{ old('position') == 'Staf Akademik' ? 'selected' : '' }}>
-                                    Staf Akademik</option>
-                                <option value="Dekan" {{ old('position') == 'Dekan' ? 'selected' : '' }}>Dekan</option>
-                                <option value="Kepala Prodi" {{ old('position') == 'Kepala Prodi' ? 'selected' : '' }}>
-                                    Kepala Prodi</option>
-                            </select>
-                            @error('position')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
                         <!-- Tombol Submit -->
                         <button type="submit" class="auth-btn auth-btn-success">
                             <i class="bi bi-person-plus"></i> Daftar
@@ -111,4 +94,3 @@
         </div>
     </div>
 @endsection
-    

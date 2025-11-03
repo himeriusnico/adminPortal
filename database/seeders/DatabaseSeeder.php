@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Dom\Document;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -16,6 +17,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             StudentSeeder::class,
             DocumentTypeSeeder::class,
+            DocumentSeeder::class,
         ]);
     }
 }

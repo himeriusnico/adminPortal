@@ -18,8 +18,12 @@
     <!-- Bootstrap Icons CDN -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <!-- DataTables CSS Basic -->
-    <link href="{{ asset('vendor/datatables/css/dataTables.bootstrap5.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('vendor/datatables/css/dataTables.min.css') }}" rel="stylesheet">
+
+    {{-- <link href="{{ asset('css/datatables-custom.css') }}" rel="stylesheet"> --}}
 
     <link rel="stylesheet" href="{{ asset('css/auth.css') }}">
 
@@ -94,6 +98,10 @@
         <!-- Show sidebar layout only for authenticated users -->
         <div class="container-fluid">
             <div class="row">
+                {{-- @php
+                    // Define $role variable for sidebar
+                    $role = Auth::user()->role->name ?? 'student';
+                @endphp --}}
                 @include('layouts.partials.sidebar')
                 <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
                     <div class="content-container">
@@ -118,7 +126,11 @@
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 
     <!-- DataTables JS Basic -->
-    <script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('vendor/datatables/js/dataTables.js') }}"></script>
+    <script src="{{ asset('vendor/datatables/js/dataTables.min.js') }}"></script>
+
+    <!-- Global DataTables Configuration -->
+    <script src="{{ asset('js/datatables-config.js') }}"></script>
 
     <!-- Custom JavaScript -->
     <script>

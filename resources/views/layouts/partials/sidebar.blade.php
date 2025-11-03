@@ -8,8 +8,7 @@
                 </a>
             </li>
 
-            <!-- Menu berdasarkan tipe pengguna -->
-            @if (Auth::user()->user_type === 'admin')
+            @if (Auth::user()->role->name === 'super_admin')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('institutions*') ? 'active' : '' }}"
                         href="{{ route('institutions.index') }}">
@@ -18,14 +17,14 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->is('pegawai*') ? 'active' : '' }}" href="#">
+                    <a class="nav-link {{ request()->is('users*') ? 'active' : '' }}" href="#">
                         <i class="bi bi-people me-2"></i>
-                        Kelola Pegawai
+                        Kelola Pengguna
                     </a>
                 </li>
             @endif
 
-            @if (in_array(Auth::user()->user_type, ['admin', 'pegawai']))
+            @if (Auth::user()->role->name === 'admin')
                 <li class="nav-item">
                     <a class="nav-link {{ request()->is('students*') ? 'active' : '' }}"
                         href="{{ route('students.index') }}">
@@ -33,26 +32,38 @@
                         Mahasiswa
                     </a>
                 </li>
-            @endif
-
-            @if (Auth::user()->user_type === 'pegawai')
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->is('upload*') ? 'active' : '' }}" href="#">
+                    <a class="nav-link {{ request()->is('documents*') ? 'active' : '' }}"
+                        href="{{ route('documents.index') }}">
                         <i class="bi bi-upload me-2"></i>
                         Unggah Dokumen
                     </a>
                 </li>
-            @endif
-
-            @if (Auth::user()->user_type === 'student')
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->is('my-documents*') ? 'active' : '' }}" href="#">
-                        <i class="bi bi-file-earmark-text me-2"></i>
-                        Dokumen Saya
+                    <a class="nav-link {{ request()->is('institution*') ? 'active' : '' }}" href="#">
+                        <i class="bi bi-gear me-2"></i>
+                        Pengaturan Institusi
                     </a>
                 </li>
             @endif
 
+            @if (Auth::user()->role->name === 'student')
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->is('my-documents*') ? 'active' : '' }}"
+                        href="{{ route('students.show', Auth::user()->student->id) }}">
+                        <i class="bi bi-file-earmark-text me-2"></i>
+                        Dokumen Saya
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->is('verification*') ? 'active' : '' }}" href="#">
+                        <i class="bi bi-qr-code me-2"></i>
+                        Verifikasi Dokumen
+                    </a>
+                </li>
+            @endif
+
+            <!-- Menu umum untuk semua role -->
             <li class="nav-item">
                 <a class="nav-link {{ request()->is('settings*') ? 'active' : '' }}" href="#">
                     <i class="bi bi-gear me-2"></i>

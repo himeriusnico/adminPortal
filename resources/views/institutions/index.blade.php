@@ -21,7 +21,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <h5 class="card-title">Total Institusi</h5>
-                            <h2 class="mb-0">{{ $institutions->total() }}</h2>
+                            <h2 class="mb-0">{{ $institutions->count() }}</h2>
                         </div>
                         <div class="align-self-center">
                             <i class="bi bi-building display-6"></i>
@@ -36,7 +36,7 @@
                     <div class="d-flex justify-content-between">
                         <div>
                             <h5 class="card-title">Aktif</h5>
-                            <h2 class="mb-0">{{ $institutions->total() }}</h2>
+                            <h2 class="mb-0">{{ $institutions->count() }}</h2>
                         </div>
                         <div class="align-self-center">
                             <i class="bi bi-check-circle display-6"></i>
@@ -83,13 +83,13 @@
             <h5 class="card-title mb-0">
                 <i class="bi bi-list-ul me-2"></i>Daftar Institusi
             </h5>
-            <div class="d-flex">
+            {{-- <div class="d-flex">
                 <input type="text" id="searchInput" class="form-control form-control-sm me-2"
                     placeholder="Cari institusi..." style="width: 250px;">
                 <button class="btn btn-sm btn-outline-secondary" onclick="exportData()">
                     <i class="bi bi-download me-1"></i>Export
                 </button>
-            </div>
+            </div> --}}
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -168,7 +168,7 @@
             </div>
 
             <!-- Pagination -->
-            @if ($institutions->hasPages())
+            {{-- @if ($institutions->hasPages())
                 <div class="d-flex justify-content-between align-items-center mt-3">
                     <div class="text-muted">
                         Menampilkan {{ $institutions->firstItem() }} - {{ $institutions->lastItem() }} dari
@@ -178,7 +178,7 @@
                         {{ $institutions->links() }}
                     </nav>
                 </div>
-            @endif
+            @endif --}}
         </div>
     </div>
 
@@ -243,13 +243,14 @@
                     {{-- <button type="button" class="btn btn-success" onclick="generateCertificate()">
                         <i class="bi bi-gear me-2"></i>Generate & Simpan
                     </button> --}}
+
                     <button type="button" class="btn btn-success" id="btnGenerateCertificate">
                         <i class="bi bi-gear me-2"></i>Generate & Simpan
                     </button>
 
-                    <button type="button" class="btn btn-primary" onclick="submitInstitutionForm()">
+                    {{-- <button type="button" class="btn btn-primary" onclick="submitInstitutionForm()">
                         <i class="bi bi-save me-2"></i>Simpan
-                    </button>
+                    </button> --}}
                 </div>
             </div>
         </div>
@@ -314,96 +315,159 @@
 
     @push('scripts')
         <script>
+            // $(document).ready(function() {
+            //     // Inisialisasi DataTables
+            //     $('#institutionsTable').DataTable({
+            //         language: {
+            //             search: "Cari:",
+            //             lengthMenu: "Tampilkan _MENU_ data per halaman",
+            //             info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+            //             infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
+            //             infoFiltered: "(disaring dari _MAX_ total data)",
+            //             zeroRecords: "Tidak ada data yang ditemukan",
+            //             paginate: {
+            //                 first: "Pertama",
+            //                 last: "Terakhir",
+            //                 next: ">",
+            //                 previous: "<"
+            //             }
+            //         },
+            //         responsive: true,
+            //         order: [
+            //             [4, 'desc']
+            //         ], // Default urut berdasarkan tanggal dibuat
+            //         pageLength: 10,
+            //         lengthMenu: [
+            //             [5, 10, 25, 50, -1],
+            //             [5, 10, 25, 50, "All"]
+            //         ],
+            //         columnDefs: [{
+            //                 targets: [5], // Kolom aksi
+            //                 orderable: false,
+            //                 searchable: false
+            //             },
+            //             {
+            //                 targets: '_all',
+            //                 className: 'align-middle'
+            //             }
+            //         ]
+            //     });
+            // });
+
             $(document).ready(function() {
-                // Inisialisasi DataTables
-                $('#institutionsTable').DataTable({
-                    language: {
-                        search: "Cari:",
-                        lengthMenu: "Tampilkan _MENU_ data per halaman",
-                        info: "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                        infoEmpty: "Menampilkan 0 sampai 0 dari 0 data",
-                        infoFiltered: "(disaring dari _MAX_ total data)",
-                        zeroRecords: "Tidak ada data yang ditemukan",
-                        paginate: {
-                            first: "Pertama",
-                            last: "Terakhir",
-                            next: "Berikutnya",
-                            previous: "Sebelumnya"
-                        }
-                    },
-                    responsive: true,
+                initDataTable('#institutionsTable', {
                     order: [
                         [4, 'desc']
                     ], // Default urut berdasarkan tanggal dibuat
-                    pageLength: 10,
-                    lengthMenu: [
-                        [5, 10, 25, 50, -1],
-                        [5, 10, 25, 50, "All"]
-                    ],
                     columnDefs: [{
-                            targets: [5], // Kolom aksi
-                            orderable: false,
-                            searchable: false
-                        },
-                        {
-                            targets: '_all',
-                            className: 'align-middle'
-                        }
-                    ]
+                        targets: [5], // Kolom aksi
+                        orderable: false,
+                        searchable: false
+                    }]
                 });
-            });
+            })
 
             // Simple search functionality
-            document.getElementById('searchInput').addEventListener('input', function(e) {
-                const searchTerm = e.target.value.toLowerCase();
-                const rows = document.querySelectorAll('#institutionsTable tbody tr');
+            // document.getElementById('searchInput').addEventListener('input', function(e) {
+            //     const searchTerm = e.target.value.toLowerCase();
+            //     const rows = document.querySelectorAll('#institutionsTable tbody tr');
 
-                rows.forEach(row => {
-                    const text = row.textContent.toLowerCase();
-                    row.style.display = text.includes(searchTerm) ? '' : 'none';
-                });
-            });
+            //     rows.forEach(row => {
+            //         const text = row.textContent.toLowerCase();
+            //         row.style.display = text.includes(searchTerm) ? '' : 'none';
+            //     });
+            // });
 
             document.getElementById('btnGenerateCertificate').addEventListener('click', function() {
                 const form = document.getElementById('addInstitutionForm');
                 const formData = new FormData(form);
 
-                console.log('🚀 Memulai proses generate ECDSA keypair...');
-                console.log('Form data:', {
-                    name: formData.get('name'),
-                    email: formData.get('email'),
-                    alamat: formData.get('alamat')
-                });
 
-                fetch("{{ route('institutions.store') }}", {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': form.querySelector('input[name=_token]').value,
-                            'Accept': 'application/json'
-                        },
-                        body: formData
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('✅ Response dari server:', data);
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+
+                Swal.fire({
+                    title: "Generate Keypair & Simpan?",
+                    text: "Sistem akan membuat ECDSA keypair dan menyimpan institusi baru",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonColor: "#198754",
+                    cancelButtonColor: "#6c757d",
+                    confirmButtonText: "Ya, Lanjutkan!",
+                    cancelButtonText: "Batal",
+                    showLoaderOnConfirm: true,
+                    preConfirm: () => {
+                        return fetch("{{ route('institutions.store') }}", {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': form.querySelector('input[name=_token]').value,
+                                    'Accept': 'application/json'
+                                },
+                                body: formData
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok');
+                                }
+                                return response.json();
+                            })
+                            .catch(error => {
+                                Swal.showValidationMessage(`Request failed: ${error}`);
+                            });
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const data = result.value;
 
                         if (data.success) {
+                            console.log('✅ Response dari server:', data);
                             console.log('📄 Public key yang diterima:', data.data.public_key);
                             console.log('🔒 Path private key:', data.data.private_key_path);
 
-                            alert('Institusi berhasil ditambahkan & keypair dibuat (cek console)');
-                            // Tutup modal
-                            const modal = bootstrap.Modal.getInstance(document.getElementById(
-                                'addInstitutionModal'));
-                            modal.hide();
-                            form.reset();
+                            // Success alert
+                            Swal.fire({
+                                title: "Berhasil!",
+                                html: `
+                                    <p><strong>${formData.get('name')}</strong> berhasil ditambahkan!</p>
+                                    <p class="text-muted mb-0">✓ ECDSA Keypair telah digenerate</p>
+                                    <p class="text-muted mb-0">✓ Data institusi telah disimpan</p>
+                                `,
+                                icon: "success",
+                                confirmButtonColor: "#198754",
+                                // timer: 3000,
+                                // timerProgressBar: true
+                            }).then(() => {
+                                // Tutup modal
+                                const modal = bootstrap.Modal.getInstance(document.getElementById(
+                                    'addInstitutionModal'));
+                                modal.hide();
+                                form.reset();
+
+                                // Reload halaman untuk refresh data
+                                location.reload();
+                            });
                         } else {
-                            console.error('❌ Terjadi kesalahan:', data.message);
+                            // Error dari server
+                            Swal.fire({
+                                title: "Gagal!",
+                                text: data.message || "Terjadi kesalahan saat menyimpan institusi",
+                                icon: "error",
+                                confirmButtonColor: "#dc3545"
+                            });
                         }
-                    })
-                    .catch(err => {
-                        console.error('❌ Error saat fetch:', err);
+                    }
+                }).catch(error => {
+                    console.error('❌ Error:', error);
+                    Swal.fire({
+                        title: "Error!",
+                        text: "Terjadi kesalahan jaringan. Silakan coba lagi.",
+                        icon: "error",
+                        confirmButtonColor: "#dc3545"
                     });
+                });
             });
 
 
@@ -454,23 +518,23 @@
                 alert('Fungsi generate certificate akan diimplementasikan kemudian');
             }
 
-            function submitInstitutionForm() {
-                const form = document.getElementById('addInstitutionForm');
-                const formData = new FormData(form);
+            // function submitInstitutionForm() {
+            //     const form = document.getElementById('addInstitutionForm');
+            //     const formData = new FormData(form);
 
-                // Simulasi submit
-                alert('Data institusi akan disimpan:\n' +
-                    'Nama: ' + formData.get('name') + '\n' +
-                    'Email: ' + formData.get('email') + '\n' +
-                    'Alamat: ' + formData.get('alamat'));
+            //     // Simulasi submit
+            //     alert('Data institusi akan disimpan:\n' +
+            //         'Nama: ' + formData.get('name') + '\n' +
+            //         'Email: ' + formData.get('email') + '\n' +
+            //         'Alamat: ' + formData.get('alamat'));
 
-                // Tutup modal setelah submit
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addInstitutionModal'));
-                modal.hide();
+            //     // Tutup modal setelah submit
+            //     const modal = bootstrap.Modal.getInstance(document.getElementById('addInstitutionModal'));
+            //     modal.hide();
 
-                // Reset form
-                form.reset();
-            }
+            //     // Reset form
+            //     form.reset();
+            // }
         </script>
     @endpush
 @endsection

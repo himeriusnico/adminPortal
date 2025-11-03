@@ -3,7 +3,7 @@
 @section('title', 'Manajemen Institusi - Repositori Dokumen Akademik')
 
 @section('styles')
-    <link href="{{ asset('vendor/datatables/css/dataTables.bootstrap5.min.css') }}" rel="stylesheet">
+    {{-- <link href="{{ asset('vendor/datatables/css/dataTables.min.css') }}" rel="stylesheet"> --}}
     <style>
         .institution-logo {
             width: 40px;

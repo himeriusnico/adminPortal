@@ -17,7 +17,7 @@ class User extends Authenticatable
         'password',
         'role_id',
         'institution_id',
-        'user_type',
+        // 'user_type',
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -39,6 +39,6 @@ class User extends Authenticatable
 
     public function documents()
     {
-        return $this->hasMany(Document::class, 'pegawais_id');
+        return $this->hasManyThrough(Document::class, Student::class, 'user_id', 'student_id', 'id', 'id');
     }
-}
+}   

@@ -11,7 +11,7 @@
                 </ol>
             </nav>
         </div>
-        <div>
+        {{-- <div>
             <a href="{{ route('students.index') }}" class="btn btn-secondary me-2">
                 <i class="bi bi-arrow-left me-2"></i>Kembali
             </a>
@@ -21,7 +21,7 @@
             <button class="btn btn-danger" onclick="deleteStudent({{ $student->id }})">
                 <i class="bi bi-trash me-2"></i>Hapus
             </button>
-        </div>
+        </div> --}}
     </div>
 
     <div class="row">
