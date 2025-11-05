@@ -109,6 +109,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // Unggah Dokumen (sesuai sidebar 'documents*')
     Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
+    Route::get('/documents/{document}/view', [DocumentController::class, 'viewDocument'])->name('documents.view');
 
     // Faculty Management Routes
     Route::post('/faculties', [FacultyController::class, 'store'])->name('faculties.store');

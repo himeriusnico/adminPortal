@@ -57,20 +57,27 @@ class DashboardController extends Controller
     private function getAdminStats($user)
     {
         $institutionId = $user->institution_id;
+        $adminRole = \App\Models\Role::where('name', 'admin')->first();
 
-        // Hitung total admin di institution yang sama (termasuk dirinya sendiri)
-        $totalAdmins = User::where('institution_id', $institutionId)
-            ->whereHas('role', function ($query) {
-                $query->where('name', 'admin');
-            })->count();
+        $totalAdmins = $adminRole
+            ? User::where('institution_id', $institutionId)->where('role_id', $adminRole->id)->count()
+            : 0;
+
+        $institutionDocuments = Document::where('institution_id', $institutionId);
 
         return [
+            'my_uploads' => $institutionDocuments->count(),
+            'verified_docs' => $institutionDocuments->whereNotNull('tx_id')->count(),
+            'pending_docs' => Document::where('institution_id', $institutionId)->whereNull('tx_id')->count(),
+            'transactions' => 0,
+
+            // STATS LAMA/TAMBAHAN
             'institution_name' => $user->institution->name ?? '-',
             'total_admins' => $totalAdmins,
             'total_students' => Student::where('institution_id', $institutionId)->count(),
-            'total_documents' => Document::where('institution_id', $institutionId)->count(),
-            'verified_documents' => Document::where('institution_id', $institutionId)->whereNotNull('tx_id')->count(),
-            'pending_documents' => Document::where('institution_id', $institutionId)->whereNull('tx_id')->count(),
+
+            // Catatan: Jika Anda tetap ingin menjaga key lama untuk tujuan lain, tambahkan saja yang baru.
+            // Namun, jika tujuannya hanya untuk Dashboard, ganti saja namanya.
         ];
     }
 
@@ -96,24 +103,24 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getRecentDocuments($limit = null)
+    private function getRecentDocuments()
     {
         return Document::with(['student.user', 'institution'])
             ->latest()
-            ->take($limit)
+            // ->take($limit)
             ->get();
     }
 
-    private function getInstitutionDocuments($institutionId, $limit = 5)
+    private function getInstitutionDocuments($institutionId)
     {
         return Document::with(['student.user', 'institution'])
             ->where('institution_id', $institutionId)
             ->latest()
-            ->take($limit)
+            // ->take($limit)
             ->get();
     }
 
-    private function getStudentRecentDocuments($user, $limit = 5)
+    private function getStudentRecentDocuments($user)
     {
         $student = Student::where('user_id', $user->id)->first();
 
@@ -124,7 +131,7 @@ class DashboardController extends Controller
         return Document::with(['institution'])
             ->where('student_id', $student->id)
             ->latest()
-            ->take($limit)
+            // ->take($limit)
             ->get();
     }
 }

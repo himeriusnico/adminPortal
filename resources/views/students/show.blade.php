@@ -105,7 +105,12 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                <button class="btn btn-sm btn-outline-primary">
+                                                <a href="{{ route('documents.view', $document->id) }}" target="_blank"
+                                                    class="btn btn-sm btn-outline-primary" title="Lihat dokumen">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                {{-- Download e belum ya --}}
+                                                <button class="btn btn-sm btn-outline-primary" title="Unduh">
                                                     <i class="bi bi-download"></i>
                                                 </button>
                                             </td>

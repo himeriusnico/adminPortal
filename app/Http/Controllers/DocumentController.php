@@ -78,4 +78,24 @@ class DocumentController extends Controller
 
     return back()->with('success', 'Dokumen berhasil diunggah.');
   }
+
+  public function viewDocument(Document $document)
+  {
+    $admin = Auth::user();
+
+    if ($document->institution_id !== $admin->institution_id) {
+      abort(403, 'Akses ditolak. Anda hanya dapat melihat dokumen dari institusi Anda.');
+    }
+    try {
+      /** @var \Illuminate\Filesystem\FilesystemAdapter $storage */
+      // Use PHPDoc hinting biar bisa kasih tau interphelense real class type bukan hanya interface
+      $storage = Storage::disk('private');
+      return $storage->response($document->file_path, null, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => 'inline; filename="' . $document->filename . '"'
+      ]);
+    } catch (\Exception $e) {
+      return back()->with('error', 'Gagal membuka dokumen: ' . $e->getMessage());
+    }
+  }
 }
