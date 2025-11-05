@@ -3,11 +3,11 @@
 @section('institution-content')
     <div class="container-fluid">
         <!-- Header Section -->
-        <div class="row mb-5">
+        <div class="row mb-2">
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h1 class="h3 mb-2 text-primary">Pengaturan Institusi</h1>
+                        <h1 class="h3 mb-2">Pengaturan Institusi</h1>
                         <p class="text-muted">Kelola Fakultas dan Program Studi di institusi Anda</p>
                     </div>
                     {{-- <div class="d-flex">
@@ -29,7 +29,7 @@
         </div>
 
         <!-- Stats Cards -->
-        <div class="row mb-4">
+        <div class="row mb-1">
             <div class="col-md-6 mb-3">
                 <div class="card stat-card">
                     <div class="card-body">

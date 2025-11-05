@@ -55,15 +55,20 @@
 
                     <div class="col-md-3 mb-3">
                         <label for="document_type" class="form-label">Jenis Dokumen *</label>
-                        <select class="form-select @error('document_type') is-invalid @enderror" id="document_type"
-                            name="document_type" required>
+                        <select class="form-select @error('document_type_id') is-invalid @enderror" id="document_type_id"
+                            name="document_type_id" required>
                             <option value="" disabled selected>-- Pilih Jenis --</option>
                             {{-- (Ini berdasarkan ENUM di tabel Dokumen Anda) --}}
-                            <option value="dokumen_ijazah" {{ old('document_type') == 'dokumen_ijazah' ? 'selected' : '' }}>
+                            {{-- <option value="dokumen_ijazah" {{ old('document_type') == 'dokumen_ijazah' ? 'selected' : '' }}>
                                 Ijazah</option>
                             <option value="transkrip" {{ old('document_type') == 'transkrip' ? 'selected' : '' }}>Transkrip
                                 Nilai</option>
-                            <option value="skpi" {{ old('document_type') == 'skpi' ? 'selected' : '' }}>SKPI</option>
+                            <option value="skpi" {{ old('document_type') == 'skpi' ? 'selected' : '' }}>SKPI</option> --}}
+                            @foreach ($documentTypes as $type)
+                                <option value="{{ $type->id }}"
+                                    {{ old('document_type_id') == $type->id ? 'selected' : '' }}>
+                                    {{ $type->name }} </option>
+                            @endforeach
                         </select>
                     </div>
 
@@ -104,13 +109,15 @@
                                 <td>{{ $doc->student->user->name ?? 'N/A' }}</td>
                                 <td><code>{{ $doc->student->student_id ?? 'N/A' }}</code></td>
                                 <td>
-                                    @if ($doc->document_type === 'dokumen_ijazah')
+                                    {{-- @if ($doc->document_type === 'dokumen_ijazah')
                                         <span class="badge bg-primary">Ijazah</span>
                                     @elseif($doc->document_type === 'transkrip')
                                         <span class="badge bg-info">Transkrip</span>
                                     @else
                                         <span class="badge bg-success">SKPI</span>
-                                    @endif
+                                    @endif --}}
+                                    <span
+                                        class="badge bg-secondary">{{ $doc->documentType->name ?? 'Jenis Hilang' }}</span>
                                 </td>
                                 <td><i class="bi bi-file-pdf text-danger me-2"></i>{{ $doc->filename }}</td>
                                 <td data-order="{{ $doc->created_at->timestamp }}">{{ $doc->created_at->format('d M Y') }}

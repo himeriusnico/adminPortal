@@ -15,7 +15,7 @@ class Document extends Model
         'institution_id',
         'filename',
         'document_type_id',
-        'document_type',
+        // 'document_type',
         'hash',
         'signature',
         'tx_id',

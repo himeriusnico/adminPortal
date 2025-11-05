@@ -19,7 +19,7 @@
             </div>
         </div>
 
-        <div class="alert alert-info mb-4">
+        <div class="alert alert-info mb-5">
             <h4 class="alert-heading">Selamat Datang, {{ Auth::user()->name }}!</h4>
             <p class="mb-0">
 
@@ -44,7 +44,7 @@
             </p>
         </div>
 
-        <div class="row mb-5">
+        <div class="row mb-0">
 
             @if (Auth::user()->role->name === 'super_admin')
                 <div class="col-xl-3 col-md-6 mb-4">
