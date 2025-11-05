@@ -19,7 +19,7 @@ class ProgramStudy extends Model
 
   public function institution()
   {
-    return $this->belongsTo(Institution::class, 'university_id');
+    return $this->belongsTo(Institution::class, 'university_id', 'id');
   }
 
   public function students()

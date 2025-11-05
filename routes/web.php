@@ -6,6 +6,11 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\FacultyController;
+use App\Http\Controllers\ProgramStudyController;
+use App\Models\Faculty;
+use App\Models\ProgramStudy;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -60,6 +65,12 @@ Route::middleware('auth')->group(function () {
 });
 
 
+//Route spesifik untuk admin mengakses pengaturan institusi soale 
+// institutions.show (dengan wildcard) berada di urutan file di atas institutions.settings (yang spesifik), rute Super Admin menangkapnya.
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/institutions/settings', [InstitutionController::class, 'setting'])->name('institutions.settings');
+});
+
 // == 3. RUTE SUPER ADMIN ==
 // (Hanya 'super_admin' yang bisa akses)
 Route::middleware(['auth', 'role:super_admin'])->group(function () {
@@ -67,9 +78,10 @@ Route::middleware(['auth', 'role:super_admin'])->group(function () {
     // Institutions Routes (sesuai file asli Anda)
     Route::get('/institutions', [InstitutionController::class, 'index'])->name('institutions.index');
     Route::post('/institutions', [InstitutionController::class, 'store'])->name('institutions.store');
-    Route::get('/institutions/{institution}', [InstitutionController::class, 'show'])->name('institutions.show');
     Route::put('/institutions/{institution}', [InstitutionController::class, 'update'])->name('institutions.update');
     Route::delete('/institutions/{institution}', [InstitutionController::class, 'destroy'])->name('institutions.destroy');
+    // Keep wildcard routes LAST to prevent conflicts with specific routes
+    Route::get('/institutions/{institution}', [InstitutionController::class, 'show'])->name('institutions.show');
     // CATATAN: 5 baris di atas bisa disingkat menjadi:
     // Route::resource('institutions', InstitutionController::class)->except(['create', 'edit']);
 
@@ -98,10 +110,15 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
 
-    // Pengaturan Institusi (sesuai sidebar 'institution*')
-    Route::get('/institution/settings', function () {
-        return view('institution.settings'); // Asumsi ada view settings
-    })->name('institution.settings');
+    // Faculty Management Routes
+    Route::post('/faculties', [FacultyController::class, 'store'])->name('faculties.store');
+    Route::delete('/faculties/{faculty}', [FacultyController::class, 'destroy'])->name('faculties.destroy');
+    Route::get('/faculties/{faculty}/program-studies', [FacultyController::class, 'getProgramStudies'])
+        ->name('faculties.programs');
+
+    // Program Study Management Routes
+    Route::post('/program-studies', [ProgramStudyController::class, 'store'])->name('program-studies.store');
+    Route::delete('/program-studies/{programStudy}', [ProgramStudyController::class, 'destroy'])->name('program-studies.destroy');
 });
 
 // == 5. RUTE STUDENT ==

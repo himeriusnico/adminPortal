@@ -40,7 +40,8 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->is('institution*') ? 'active' : '' }}" href="#">
+                    <a class="nav-link {{ request()->is('institution*') ? 'active' : '' }}"
+                        href="{{ route('institutions.settings') }}">
                         <i class="bi bi-gear me-2"></i>
                         Pengaturan Institusi
                     </a>

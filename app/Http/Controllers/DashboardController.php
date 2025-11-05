@@ -96,7 +96,7 @@ class DashboardController extends Controller
         ];
     }
 
-    private function getRecentDocuments($limit = 5)
+    private function getRecentDocuments($limit = null)
     {
         return Document::with(['student.user', 'institution'])
             ->latest()

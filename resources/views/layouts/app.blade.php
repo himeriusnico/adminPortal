@@ -27,6 +27,8 @@
 
     <link rel="stylesheet" href="{{ asset('css/auth.css') }}">
 
+    <link href="{{ asset('css/stats-card.css') }}" rel="stylesheet">
+
     <!-- Custom CSS untuk dashboard -->
     @if (request()->is('dashboard') || request()->is('dashboard/*'))
         <link href="{{ asset('css/dashboard.css') }}" rel="stylesheet">

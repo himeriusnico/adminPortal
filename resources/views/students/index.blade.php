@@ -99,9 +99,9 @@
                             <th>#</th>
                             <th>Mahasiswa</th>
                             <th>NIM</th>
-                            <th>Program Studi</th>
                             <th>Fakultas</th>
-                            <th>Institusi</th>
+                            <th>Program Studi</th>
+                            {{-- <th>Institusi</th> --}}
                             <th>Tahun Masuk</th>
                             <th>Status</th>
                             <th>Aksi</th>
@@ -128,13 +128,13 @@
                                 <td>
                                     <code>{{ $student->student_id }}</code>
                                 </td>
-                                <td>{{ $student->program_study }}</td>
-                                <td>{{ $student->faculty }}</td>
-                                <td>
+                                <td>{{ $student->faculty->name ?? 'N/A' }}</td>
+                                <td>{{ $student->programStudy->name ?? 'N/A' }}</td>
+                                {{-- <td>
                                     <span class="badge bg-light text-dark">
                                         {{ $student->institution->name ?? 'N/A' }}
                                     </span>
-                                </td>
+                                </td> --}}
                                 <td>{{ $student->entry_year }}</td>
                                 <td>
                                     @if ($student->status === 'active')
@@ -221,22 +221,48 @@
                                 <input type="text" class="form-control" id="student_id" name="student_id" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="program_study" class="form-label">Program Studi *</label>
-                                <input type="text" class="form-control" id="program_study" name="program_study"
-                                    required>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="faculty" class="form-label">Fakultas *</label>
-                                <input type="text" class="form-control" id="faculty" name="faculty" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
                                 <label for="entry_year" class="form-label">Tahun Masuk *</label>
                                 <input type="number" class="form-control" id="entry_year" name="entry_year"
                                     min="2000" max="2030" required>
                             </div>
                         </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="faculty" class="form-label">Fakultas *</label>
+                                <select class="form-select" id="faculty" name="faculty_id" required>
+                                    <option value="" disabled selected>Pilih Fakultas</option>
+                                    @foreach ($faculties as $faculty)
+                                        <option value="{{ $faculty->id }}">{{ $faculty->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="program_study" class="form-label">Program Studi *</label>
+                                <select class="form-select" name="program_study_id" id="program_study" required>
+                                    <option value="">Pilih Program Studi</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">Status *</label>
+                                <select class="form-select" id="status" name="status" required>
+                                    <option value="active">Aktif</option>
+                                    <option value="graduated">Lulus</option>
+                                    <option value="inactive">Non-Aktif</option>
+                                </select>
+                            </div>
+
+                            <!-- Add Graduation Date (optional, shown only if status is 'graduated') -->
+                            <div class="col-md-6 mb-3" id="graduationDateContainer" style="display: none;">
+                                <label for="graduation_date" class="form-label">Tanggal Kelulusan</label>
+                                <input type="date" class="form-control" id="graduation_date" name="graduation_date">
+                            </div>
+                        </div>
+
+                        <!-- Add hidden fields for institution_id -->
+                        <input type="hidden" name="institution_id" value="{{ Auth::user()->institution_id }}">
+
                         <div class="mb-3">
                             <label for="phone" class="form-label">Nomor Telepon</label>
                             <input type="tel" class="form-control" id="phone" name="phone">
@@ -253,6 +279,17 @@
 
     @push('scripts')
         <script>
+            document.getElementById('status').addEventListener('change', function() {
+                const graduationDateContainer = document.getElementById('graduationDateContainer');
+                graduationDateContainer.style.display = this.value === 'graduated' ? 'block' : 'none';
+
+                if (this.value === 'graduated') {
+                    document.getElementById('graduation_date').required = true;
+                } else {
+                    document.getElementById('graduation_date').required = false;
+                }
+            });
+
             // Simple search functionality
             document.getElementById('searchInput').addEventListener('input', function(e) {
                 const searchTerm = e.target.value.toLowerCase();
@@ -265,33 +302,91 @@
             });
 
             document.addEventListener('DOMContentLoaded', function() {
-                // Inisialisasi DataTables
-                const table = new DataTable('#studentsTable', {
-                    responsive: true,
-                    pageLength: 10,
-                    lengthMenu: [5, 10, 25, 50],
-                    language: {
-                        search: "Cari:",
-                        lengthMenu: "Tampilkan _MENU_ entri",
-                        info: "Menampilkan _START_ - _END_ dari _TOTAL_ mahasiswa",
-                        paginate: {
-                            previous: "Sebelumnya",
-                            next: "Berikutnya"
+                // Only initialize DataTables if there's data
+                @if ($students->count() > 0)
+                    const table = new DataTable('#studentsTable', {
+                        responsive: true,
+                        pageLength: 10,
+                        lengthMenu: [5, 10, 25, 50],
+                        language: {
+                            search: "Cari:",
+                            lengthMenu: "Tampilkan _MENU_ entri",
+                            info: "Menampilkan _START_ - _END_ dari _TOTAL_ mahasiswa",
+                            paginate: {
+                                previous: "Sebelumnya",
+                                next: "Berikutnya"
+                            },
+                            emptyTable: "Tidak ada data mahasiswa yang tersedia"
                         },
-                        emptyTable: "Tidak ada data mahasiswa yang tersedia"
-                    },
-                    columnDefs: [{
+                        columnDefs: [{
                             orderable: false,
-                            targets: [8]
-                        } // Kolom aksi tidak bisa di-sort
-                    ]
-                });
+                            targets: [7] // Kolom aksi tidak bisa di-sort
+                        }]
+                    });
+                @endif
             });
 
-            function exportData() {
-                // Simple export functionality - can be enhanced with proper CSV/Excel export
-                alert('Fitur export akan diimplementasikan kemudian');
-            }
+            document.getElementById('faculty').addEventListener('change', function() {
+                const facultyId = this.value;
+                const programStudySelect = document.getElementById('program_study');
+
+                console.log(facultyId);
+                const url = `{{ url('/faculties/${facultyId}/program-studies') }}`;
+                console.log('Request URL:', url);
+
+                programStudySelect.innerHTML = '<option value="">Pilih Program Studi</option>';
+
+                if (facultyId) {
+                    // Show loading state with SweetAlert2
+                    Swal.fire({
+                        title: 'Memuat Program Studi...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    // Disable select while loading
+                    programStudySelect.disabled = true;
+
+                    fetch(url)
+                        .then(response => {
+                            console.log('Response status:', response.status);
+                            console.log('Response headers:', response.headers);
+                            if (!response.ok) {
+                                throw new Error('Gagal memuat data program studi');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Received data:', data);
+                            if (Array.isArray(data) && data.length > 0) {
+                                data.forEach(ps => {
+                                    programStudySelect.add(new Option(ps.name, ps.id));
+                                });
+                                // Close loading dialog on success
+                                Swal.close();
+                            } else {
+                                throw new Error('Tidak ada program studi yang tersedia');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error details:', error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error!',
+                                text: error.message || 'Terjadi kesalahan saat memuat program studi',
+                                confirmButtonText: 'Tutup'
+                            });
+
+                            // Add empty option to indicate error
+                            programStudySelect.innerHTML = '<option value="">Error: Gagal memuat data</option>';
+                        })
+                        .finally(() => {
+                            programStudySelect.disabled = false;
+                        });
+                }
+            });
 
             function editStudent(id) {
                 // Redirect to edit page or open edit modal
@@ -318,8 +413,69 @@
             }
 
             function submitStudentForm() {
-                // Implement form submission
-                alert('Fitur tambah mahasiswa akan diimplementasikan kemudian');
+                const form = document.getElementById('createStudentForm');
+                const formData = new FormData(form);
+
+                console.log(formData);
+                for (let [key, value] of formData.entries()) {
+                    console.log(`${key}: ${value}`);
+                }
+
+                if (!form.checkValidity()) {
+                    console.error('Form validation failed');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validasi Gagal',
+                        text: 'Silakan isi semua field yang wajib diisi'
+                    });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Menyimpan...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                fetch("{{ route('students.store') }}", {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: 'Mahasiswa baru berhasil ditambahkan',
+                                confirmButtonText: 'OK', // show OK button
+                                showConfirmButton: true, // make sure it's visible
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    location.reload();
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal!',
+                                text: data.message || 'Terjadi kesalahan'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error!',
+                            text: 'Terjadi kesalahan sistem'
+                        });
+                    });
             }
         </script>
     @endpush

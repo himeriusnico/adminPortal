@@ -10,7 +10,12 @@ class Faculty extends Model
 {
   use HasFactory, SoftDeletes;
 
-  protected $fillable = ['name'];
+  protected $fillable = ['name', 'institution_id'];
+
+  public function institution()
+  {
+    return $this->belongsTo(Institution::class);
+  }
 
   public function programStudies()
   {

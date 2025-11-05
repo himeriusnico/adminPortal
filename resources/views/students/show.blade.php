@@ -48,8 +48,8 @@
 
                     <div class="text-start">
                         <p><strong>NIM:</strong> <code>{{ $student->student_id }}</code></p>
-                        <p><strong>Program Studi:</strong> {{ $student->program_study }}</p>
-                        <p><strong>Fakultas:</strong> {{ $student->faculty }}</p>
+                        <p><strong>Program Studi:</strong> {{ $student->programStudy->name ?? 'N/A' }}</p>
+                        <p><strong>Fakultas:</strong> {{ $student->faculty->name ?? 'N/A' }}</p>
                         <p><strong>Tahun Masuk:</strong> {{ $student->entry_year }}</p>
                         @if ($student->phone)
                             <p><strong>Telepon:</strong> {{ $student->phone }}</p>

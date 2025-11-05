@@ -3,6 +3,7 @@
 @section('title', 'Unggah Dokumen - Repositori Dokumen Akademik')
 
 @section('content')
+    {{-- @dd(Auth::user()); --}}
     <div class="d-flex justify-content-between align-items-center pt-4 pb-3 mb-4 border-bottom">
         <h1 class="h2">Manajemen Dokumen</h1>
     </div>
@@ -138,20 +139,24 @@
     <script>
         // Inisialisasi DataTables untuk tabel dokumen
         $(document).ready(function() {
-            $('#documentsTable').DataTable({
-                language: {
-                    search: "Cari:",
-                    lengthMenu: "Tampilkan _MENU_ data",
-                    info: "Menampilkan _START_ - _END_ dari _TOTAL_ dokumen",
-                    paginate: {
-                        previous: "Sebelumnya",
-                        next: "Berikutnya"
-                    }
-                },
-                order: [
-                    [4, 'desc']
-                ] // Urutkan berdasarkan Tgl. Upload (kolom ke-4)
-            });
+            // Only initialize DataTables if there's data
+            @if ($documents->count() > 0)
+                $('#documentsTable').DataTable({
+                    language: {
+                        search: "Cari:",
+                        lengthMenu: "Tampilkan _MENU_ data",
+                        info: "Menampilkan _START_ - _END_ dari _TOTAL_ dokumen",
+                        paginate: {
+                            previous: "Sebelumnya",
+                            next: "Berikutnya"
+                        },
+                        emptyTable: "Belum ada dokumen yang diunggah"
+                    },
+                    order: [
+                        [4, 'desc']
+                    ] // Urutkan berdasarkan Tgl. Upload
+                });
+            @endif
         });
     </script>
 @endpush

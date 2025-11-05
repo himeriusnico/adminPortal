@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 // HAPUS: use App\Models\Pegawai;
+
+use App\Models\Faculty;
+use App\Models\ProgramStudy;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use App\Models\User;
@@ -32,14 +35,15 @@ class StudentController extends Controller
         // Base query
         $query = Student::with(['user', 'institution'])->orderBy('created_at', 'desc');
 
+        $institution_id = $user->institution_id;
+
         // LOGIKA BARU:
         // Jika user adalah 'admin' (bukan 'super_admin'),
         // filter mahasiswa berdasarkan institusi milik admin tersebut.
         if ($user->role->name === 'admin') {
-
             // Ambil institution_id langsung dari user (bukan dari model Pegawai)
-            if ($user->institution_id) {
-                $query->where('institution_id', $user->institution_id);
+            if ($institution_id) {
+                $query->where('institution_id', $institution_id);
             } else {
                 // Jika admin tidak punya institusi, jangan tampilkan apa-apa
                 $query->whereRaw('1 = 0'); // Trik untuk mengembalikan 0 hasil
@@ -51,6 +55,15 @@ class StudentController extends Controller
         // Ambil data mahasiswa
         $students = $query->get(); // untuk DataTables, ambil semua
 
+        $faculties = Faculty::where('institution_id', $institution_id)
+            ->orderBy('name')
+            ->get();
+
+        $facultyIds = $faculties->pluck('id');
+        $programStudies = ProgramStudy::whereIn('faculty_id', $facultyIds)
+            ->orderBy('name')
+            ->get();
+
         // Stats untuk cards (hitung berdasarkan query yg sama)
         $activeStudents = (clone $query)->where('status', 'active')->count();
         $graduatedStudents = (clone $query)->where('status', 'graduated')->count();
@@ -60,7 +73,9 @@ class StudentController extends Controller
             'students',
             'activeStudents',
             'graduatedStudents',
-            'inactiveStudents'
+            'inactiveStudents',
+            'faculties',
+            'programStudies'
         ));
     }
 
@@ -84,54 +99,55 @@ class StudentController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'student_id' => 'required|string|unique:students,student_id',
-            'program_study' => 'required|string|max:255',
-            'faculty' => 'required|string|max:255',
+            'faculty_id' => 'required|exists:faculties,id',
+            'program_study_id' => 'required|exists:program_studies,id',
             'entry_year' => 'required|integer|min:2000|max:2030',
             'phone' => 'nullable|string|max:20',
+            'status' => 'required|in:active,graduated,inactive',
+            'graduation_date' => 'nullable|date|after_or_equal:entry_year',
         ]);
 
         // LOGIKA BARU:
         $adminUser = Auth::user(); // Ini adalah user 'admin' yang sedang login
-
-        // 1. Dapatkan Role 'student' (ID = 3 sesuai RegisterController Anda)
-        $studentRole = Role::where('name', 'student')->first();
-        if (!$studentRole) {
-            // Gagal jika role 'student' tidak ada di database
-            return response()->json(['error' => 'Konfigurasi role Student tidak ditemukan.'], 500);
-        }
-
-        // 2. Dapatkan institution_id dari admin yang login
         $institution_id = $adminUser->institution_id;
-        if (!$institution_id) {
-            return response()->json(['error' => 'Admin tidak terasosiasi dengan institusi manapun.'], 403);
+
+        try {
+            $studentRole = Role::where('name', 'student')->first();
+            $newUser = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make('11111111'), // Password default sementara
+                'role_id' => $studentRole->id, // <-- Gunakan role_id
+                'institution_id' => $institution_id // <-- Tetapkan institusi saat user dibuat
+            ]);
+
+            $student = Student::create([
+                'user_id' => $newUser->id,
+                'institution_id' => $institution_id,
+                'student_id' => $validated['student_id'],
+                'faculty_id' => $request->faculty_id,
+                'program_study_id' => $request->program_study_id,
+                'entry_year' => $validated['entry_year'],
+                'phone' => $validated['phone'] ?? null,
+                'status' => $validated['status'],
+                'graduation_date' => $validated['graduation_date'] ?? null,
+            ]);
+
+            // $faculty = Faculty::find($validated['faculty_id']);
+            // $programStudy = ProgramStudy::find($validated['program_study_id']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mahasiswa dan user berhasil dibuat.',
+                'student' => $student,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan mahasiswa: ' . $e->getMessage()
+            ], 500);
         }
-
-        // 3. Buat User baru untuk si mahasiswa
-        $newUser = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make('11111111'), // Password default sementara
-            'role_id' => $studentRole->id, // <-- Gunakan role_id
-            'institution_id' => $institution_id // <-- Tetapkan institusi saat user dibuat
-        ]);
-
-        // 4. Buat data Student
-        $student = Student::create([
-            'user_id' => $newUser->id,
-            'institution_id' => $institution_id, // <-- Ambil dari admin
-            'student_id' => $validated['student_id'],
-            'program_study' => $validated['program_study'],
-            'faculty' => $validated['faculty'],
-            'entry_year' => $validated['entry_year'],
-            'phone' => $validated['phone'] ?? null,
-            'status' => 'active',
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Mahasiswa dan user berhasil dibuat.',
-            'student' => $student,
-        ]);
+        // 1. Dapatkan Role 'student' (ID = 3 sesuai RegisterController Anda)
     }
 
     /**

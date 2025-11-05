@@ -2,8 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Faculty;
 use App\Models\Institution;
+use App\Models\ProgramStudy;
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use phpseclib3\Crypt\EC;
 use Illuminate\Support\Str;
@@ -38,61 +44,93 @@ class InstitutionController extends Controller
             'alamat' => 'nullable|string|max:255',
         ]);
 
+
         try {
-            // Generate ECDSA keypair menggunakan phpseclib
-            $ec = EC::createKey('secp256k1');
-            $privateKeyPem = $ec->toString('PKCS8');
-            $publicKeyPem  = $ec->getPublicKey()->toString('PKCS8');
-
-            // Simpan private key ke file (sementara untuk testing)
-            $safeName = Str::slug($request->name, '_');
-            $directory = 'keys/institutions/';
-            $fileName = $safeName . '_private.pem';
-            $filePath = $directory . $fileName;
-
-            if (!Storage::exists($directory)) {
-                Storage::makeDirectory($directory);
+            // Tahap 1: Generate ECDSA keypair
+            try {
+                $ec = EC::createKey('secp256k1');
+                $privateKeyPem = $ec->toString('PKCS8');
+                $publicKeyPem  = $ec->getPublicKey()->toString('PKCS8');
+            } catch (Throwable $e) {
+                throw new \Exception("Gagal generate ECDSA keypair: " . $e->getMessage());
             }
 
-            Storage::put($filePath, $privateKeyPem);
-
-            // Atur permission file (opsional)
+            // Tahap 2: Simpan private key ke storage
             try {
+                $safeName = Str::slug($request->name, '_');
+                $directory = 'keys/institutions/';
+                $fileName = $safeName . '_private.pem';
+                $filePath = $directory . $fileName;
+
+                if (!Storage::exists($directory)) {
+                    Storage::makeDirectory($directory);
+                }
+
+                Storage::put($filePath, $privateKeyPem);
+
+                // Atur permission file (opsional)
                 $fullPath = storage_path('app/' . $filePath);
                 if (file_exists($fullPath)) {
                     @chmod($fullPath, 0600);
                 }
             } catch (Throwable $e) {
-                // Abaikan error chmod
+                throw new \Exception("Gagal menyimpan private key ke file: " . $e->getMessage());
             }
 
-            // Simpan record institusi ke database
-            $institution = Institution::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'alamat' => $request->alamat,
-                'public_key' => $publicKeyPem,
-                'private_key_path' => $filePath,
-                'ca_cert' => ''
-            ]);
+            // Tahap 3: Simpan record institusi ke database
+            try {
+                $institution = Institution::create([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'alamat' => $request->alamat,
+                    'public_key' => $publicKeyPem,
+                    // 'private_key_path' => $filePath,
+                    'ca_cert' => ''
+                ]);
+            } catch (Throwable $e) {
+                throw new \Exception("Gagal menyimpan data institusi ke database: " . $e->getMessage());
+            }
 
-            // Response JSON
+            // Tahap 4: Buat user admin untuk institusi
+            try {
+                $institution_id = $institution->id;
+                $adminRole = Role::where('name', 'admin')->first();
+
+                if (!$adminRole) {
+                    throw new \Exception("Role 'admin' tidak ditemukan di tabel roles.");
+                }
+
+                $newAdminUser = User::create([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'password' => Hash::make('password'), // Password default sementara
+                    'role_id' => $adminRole->id,
+                    'institution_id' => $institution_id
+                ]);
+            } catch (Throwable $e) {
+                throw new \Exception("Gagal membuat user admin institusi: " . $e->getMessage());
+            }
+
+            // Jika semua sukses
             return response()->json([
                 'success' => true,
                 'message' => 'Institusi berhasil ditambahkan dan keypair dibuat',
                 'data' => [
                     'id' => $institution->id,
                     'public_key' => $publicKeyPem,
-                    'private_key_path' => $filePath,
+                    // 'private_key_path' => $filePath,
                 ]
             ]);
         } catch (Throwable $e) {
+            // Tangkap error dari tahap mana pun
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to generate ECDSA keypair: ' . $e->getMessage()
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'trace' => config('app.debug') ? $e->getTraceAsString() : null // hanya tampil jika APP_DEBUG=true
             ], 500);
         }
     }
+
 
     /**
      * Menampilkan detail institusi.
@@ -128,5 +166,35 @@ class InstitutionController extends Controller
             'success' => true,
             'message' => 'Institusi berhasil dihapus (simulasi)'
         ]);
+    }
+
+    public function setting()
+    {
+        // 1. Dapatkan ID institusi dari user yang sedang login (role 'admin')
+        $institutionId = Auth::user()->institution_id;
+
+        // Tambahkan pengaman jika admin tidak terikat ke institusi (walaupun seharusnya tidak terjadi)
+        if (!$institutionId) {
+            return redirect()->route('dashboard')->with('error', 'Akun Anda tidak terhubung ke institusi manapun.');
+        }
+
+        // 2. Ambil data Fakultas (Faculties)
+        // Gunakan withCount('programStudies') untuk mendapatkan jumlah Prodi di setiap Fakultas,
+        // sesuai dengan yang Anda tampilkan di Blade: {{ $faculty->program_studies_count }}
+        $faculties = Faculty::where('institution_id', $institutionId)
+            ->withCount('programStudies')
+            ->orderBy('name')
+            ->get();
+
+        // 3. Ambil data Program Studi (ProgramStudies)
+        // Gunakan with('faculty') untuk eager load nama fakultas,
+        // sesuai dengan Blade: {{ $program->faculty->name }}
+        $programStudies = ProgramStudy::where('university_id', $institutionId)
+            ->with('faculty')
+            ->orderBy('name')
+            ->get();
+
+        // 4. Kirim kedua variabel ke view
+        return view('institutions.settings', compact('faculties', 'programStudies'));
     }
 }

@@ -182,7 +182,7 @@
         </div>
     </div>
 
-    <!-- Add Institution Modal -->
+    <!-- Create Institution Modal -->
     <div class="modal fade" id="addInstitutionModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
