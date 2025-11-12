@@ -212,6 +212,14 @@
                             <textarea class="form-control" id="alamat" name="alamat" rows="3"
                                 placeholder="Masukkan alamat lengkap institusi"></textarea>
                         </div>
+                        <div class="mb-3">
+                            <label for="passphrase" class="form-label">Passphrase Admin *</label>
+                            <input type="password" class="form-control" id="passphrase" name="passphrase" required
+                                placeholder="Masukkan passphrase untuk enkripsi private key">
+                            <small class="text-muted">Passphrase ini hanya diketahui admin. Gunakan kombinasi kuat dan
+                                jangan lupa untuk dicatat!</small>
+                        </div>
+
 
                         <!-- Certificate Section (Read-only untuk sekarang) -->
                         <div class="alert alert-info">
@@ -227,13 +235,13 @@
                                         [Public key akan digenerate otomatis]
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                {{-- <div class="col-md-6">
                                     <label class="form-label">CA Certificate</label>
                                     <div class="form-control bg-light"
                                         style="min-height: 80px; font-family: monospace; font-size: 0.8rem;">
                                         [CA certificate akan digenerate otomatis]
                                     </div>
-                                </div>
+                                </div> --}}
                             </div>
                         </div>
                     </form>
@@ -287,12 +295,12 @@
                                     <pre id="detailPublicKey" style="white-space: pre-wrap; word-break: break-word; max-height:300px; overflow-y:auto;"></pre>
                                 </td>
                             </tr>
-                            <tr>
+                            {{-- <tr>
                                 <th>CA Certificate</th>
                                 <td>
                                     <pre id="detailCACert" style="white-space: pre-wrap; word-break: break-word; max-height:300px; overflow-y:auto;"></pre>
                                 </td>
-                            </tr>
+                            </tr> --}}
 
                             <tr>
                                 <th>Tanggal Dibuat</th>
@@ -357,7 +365,7 @@
             $(document).ready(function() {
                 initDataTable('#institutionsTable', {
                     order: [
-                        [4, 'desc']
+                        [4]
                     ], // Default urut berdasarkan tanggal dibuat
                     columnDefs: [{
                         targets: [5], // Kolom aksi
@@ -382,15 +390,28 @@
                 const form = document.getElementById('addInstitutionForm');
                 const formData = new FormData(form);
 
-
                 if (!form.checkValidity()) {
                     form.reportValidity();
                     return;
                 }
 
+                // Pastikan passphrase minimal misal 8 karakter
+                const passphrase = formData.get('passphrase');
+                console.log('Passphrase:', passphrase);
+                
+                if (!passphrase || passphrase.length < 8) {
+                    Swal.fire({
+                        title: "Passphrase terlalu pendek!",
+                        text: "Gunakan passphrase minimal 8 karakter.",
+                        icon: "warning",
+                        confirmButtonColor: "#dc3545"
+                    });
+                    return;
+                }
+
                 Swal.fire({
                     title: "Generate Keypair & Simpan?",
-                    text: "Sistem akan membuat ECDSA keypair dan menyimpan institusi baru",
+                    text: "Sistem akan membuat ECDSA keypair dan menyimpan institusi baru. Passphrase ini akan digunakan untuk mengamankan private key.",
                     icon: "question",
                     showCancelButton: true,
                     confirmButtonColor: "#198754",
@@ -421,36 +442,25 @@
                 }).then((result) => {
                     if (result.isConfirmed) {
                         const data = result.value;
-
                         if (data.success) {
-                            console.log('✅ Response dari server:', data);
-                            console.log('📄 Public key yang diterima:', data.data.public_key);
-                            console.log('🔒 Path private key:', data.data.private_key_path);
-
-                            // Success alert
                             Swal.fire({
                                 title: "Berhasil!",
                                 html: `
-                                    <p><strong>${formData.get('name')}</strong> berhasil ditambahkan!</p>
-                                    <p class="text-muted mb-0">✓ ECDSA Keypair telah digenerate</p>
-                                    <p class="text-muted mb-0">✓ Data institusi telah disimpan</p>
-                                `,
+                        <p><strong>${formData.get('name')}</strong> berhasil ditambahkan!</p>
+                        <p class="text-muted mb-0">✓ ECDSA Keypair telah digenerate</p>
+                        <p class="text-muted mb-0">✓ Private key terenkripsi dengan passphrase</p>
+                        <p class="text-muted mb-0">✓ Data institusi telah disimpan</p>
+                    `,
                                 icon: "success",
                                 confirmButtonColor: "#198754",
-                                // timer: 3000,
-                                // timerProgressBar: true
                             }).then(() => {
-                                // Tutup modal
                                 const modal = bootstrap.Modal.getInstance(document.getElementById(
                                     'addInstitutionModal'));
                                 modal.hide();
                                 form.reset();
-
-                                // Reload halaman untuk refresh data
                                 location.reload();
                             });
                         } else {
-                            // Error dari server
                             Swal.fire({
                                 title: "Gagal!",
                                 text: data.message || "Terjadi kesalahan saat menyimpan institusi",
@@ -471,6 +481,7 @@
             });
 
 
+
             function exportData() {
                 alert('Fitur export akan diimplementasikan kemudian');
             }
@@ -486,7 +497,7 @@
                             document.getElementById('detailEmail').textContent = data.email;
                             document.getElementById('detailAlamat').textContent = data.alamat || '-';
                             document.getElementById('detailPublicKey').textContent = data.public_key || '-';
-                            document.getElementById('detailCACert').textContent = data.ca_cert || '-';
+                            // document.getElementById('detailCACert').textContent = data.ca_cert || '-';
                             document.getElementById('detailCreatedAt').textContent = new Date(data.created_at)
                                 .toLocaleString();
                             document.getElementById('detailUpdatedAt').textContent = new Date(data.updated_at)

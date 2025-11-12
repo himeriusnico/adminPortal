@@ -28,13 +28,16 @@
         </div>
     @endif
 
+    {{-- Container untuk AJAX error alerts --}}
+    <div id="ajaxAlertContainer"></div>
 
     <div class="card mb-4">
         <div class="card-header">
             <h5 class="card-title mb-0"><i class="bi bi-upload me-2"></i>Unggah Dokumen Baru</h5>
         </div>
         <div class="card-body">
-            <form action="{{ route('documents.store') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('documents.store') }}" method="POST" enctype="multipart/form-data"
+                id="documentUploadForm">
                 @csrf
                 <div class="row">
                     <div class="col-md-5 mb-3">
@@ -58,12 +61,6 @@
                         <select class="form-select @error('document_type_id') is-invalid @enderror" id="document_type_id"
                             name="document_type_id" required>
                             <option value="" disabled selected>-- Pilih Jenis --</option>
-                            {{-- (Ini berdasarkan ENUM di tabel Dokumen Anda) --}}
-                            {{-- <option value="dokumen_ijazah" {{ old('document_type') == 'dokumen_ijazah' ? 'selected' : '' }}>
-                                Ijazah</option>
-                            <option value="transkrip" {{ old('document_type') == 'transkrip' ? 'selected' : '' }}>Transkrip
-                                Nilai</option>
-                            <option value="skpi" {{ old('document_type') == 'skpi' ? 'selected' : '' }}>SKPI</option> --}}
                             @foreach ($documentTypes as $type)
                                 <option value="{{ $type->id }}"
                                     {{ old('document_type_id') == $type->id ? 'selected' : '' }}>
@@ -79,10 +76,40 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary">
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#passphraseModal">
                     <i class="bi bi-upload me-2"></i>Unggah
                 </button>
+
+                <input type="hidden" name="passphrase" id="hiddenPassphrase" value="">
             </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="passphraseModal" tabindex="-1" aria-labelledby="passphraseModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="passphraseModalLabel">Konfirmasi Unggah & Tanda Tangan Digital</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Masukkan **Passphrase Kunci Privat Institusi** Anda untuk mendekripsi kunci dan menandatangani
+                        dokumen ini secara digital sebelum diunggah.</p>
+                    <div class="mb-3">
+                        <label for="passphrase_input" class="form-label">Passphrase *</label>
+                        <input type="password" class="form-control" id="passphrase_input" required autocomplete="off">
+                    </div>
+                    <div id="passphrase-alert" class="alert alert-danger d-none" role="alert">
+                        Passphrase tidak boleh kosong.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="confirmUploadBtn">
+                        <i class="bi bi-lock-fill me-2"></i>Verifikasi & Unggah
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -109,24 +136,31 @@
                                 <td>{{ $doc->student->user->name ?? 'N/A' }}</td>
                                 <td><code>{{ $doc->student->student_id ?? 'N/A' }}</code></td>
                                 <td>
-                                    {{-- @if ($doc->document_type === 'dokumen_ijazah')
-                                        <span class="badge bg-primary">Ijazah</span>
-                                    @elseif($doc->document_type === 'transkrip')
-                                        <span class="badge bg-info">Transkrip</span>
-                                    @else
-                                        <span class="badge bg-success">SKPI</span>
-                                    @endif --}}
                                     <span
                                         class="badge bg-secondary">{{ $doc->documentType->name ?? 'Jenis Hilang' }}</span>
                                 </td>
                                 <td><i class="bi bi-file-pdf text-danger me-2"></i>{{ $doc->filename }}</td>
-                                <td data-order="{{ $doc->created_at->timestamp }}">{{ $doc->created_at->format('d M Y') }}
+                                <td data-order="{{ $doc->created_at->timestamp }}">
+                                    {{ $doc->created_at->format('d M Y') }}
                                 </td>
                                 <td>
                                     @if ($doc->tx_id)
-                                        <span class="badge bg-success">Terverifikasi</span>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-success me-2">Terverifikasi</span>
+                                            <small class="text-muted" title="TX: {{ $doc->tx_id }}">
+                                                <i class="bi bi-link-45deg"></i>
+                                            </small>
+                                        </div>
                                     @else
-                                        <span class="badge bg-warning">Menunggu</span>
+                                        <div class="d-flex flex-column gap-1">
+                                            <span class="badge bg-warning">Menunggu Verifikasi</span>
+                                            <button class="btn btn-sm btn-outline-primary send-blockchain-btn"
+                                                data-doc-id="{{ $doc->id }}" data-hash="{{ $doc->hash }}"
+                                                data-signature="{{ $doc->signature }}" data-pubkey="{{ $doc->pub_key }}"
+                                                title="Kirim ke jaringan blockchain untuk verifikasi">
+                                                <i class="bi bi-shield-check me-1"></i>Verifikasi
+                                            </button>
+                                        </div>
                                     @endif
                                 </td>
                             </tr>
@@ -144,9 +178,7 @@
 
 @push('scripts')
     <script>
-        // Inisialisasi DataTables untuk tabel dokumen
         $(document).ready(function() {
-            // Only initialize DataTables if there's data
             @if ($documents->count() > 0)
                 $('#documentsTable').DataTable({
                     language: {
@@ -161,9 +193,187 @@
                     },
                     order: [
                         [4, 'desc']
-                    ] // Urutkan berdasarkan Tgl. Upload
+                    ]
                 });
             @endif
+
+            // ✅ SUBMIT VIA AJAX - Handle JSON Response
+            $('#confirmUploadBtn').on('click', function() {
+                const passphrase = $('#passphrase_input').val();
+                const form = $('#documentUploadForm');
+
+                console.log('Passphrase modal value:', passphrase);
+                console.log('Passphrase length:', passphrase.length);
+
+                if (passphrase === 0 || passphrase === '') {
+                    $('#passphrase-alert')
+                        .removeClass('d-none')
+                        .text('Passphrase tidak boleh kosong.');
+                    console.log('Validation failed: Passphrase is empty.');
+                    return;
+                }
+
+                $('#hiddenPassphrase').val(passphrase);
+                console.log('Hidden Passphrase value set to:', $('#hiddenPassphrase').val());
+                $('#passphraseModal').modal('hide');
+
+                const $btn = $(this);
+                $btn.prop('disabled', true).html(
+                    '<i class="bi bi-hourglass-split me-1"></i>Memproses...');
+
+                // ✅ SUBMIT VIA AJAX
+                const formData = new FormData(form[0]);
+
+                $.ajax({
+                    url: form.attr('action'),
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json', // ✅ EXPECT JSON, not HTML
+                    timeout: 60000,
+
+                    success: function(response, status, xhr) {
+                        console.log('Upload success!', response);
+
+                        if (response.success) {
+                            // ✅ Show success message
+                            showSuccessAlert(response.message);
+
+                            // Clear form
+                            form[0].reset();
+                            $('#hiddenPassphrase').val('');
+
+                            // Reload page after 2 seconds to show updated table
+                            setTimeout(() => {
+                                location.reload();
+                            }, 2000);
+                        } else {
+                            showErrorAlert(response.message);
+                            resetUploadButton($btn);
+                        }
+                    },
+
+                    error: function(xhr, status, error) {
+                        console.error('Upload error:', {
+                            status: xhr.status,
+                            statusText: xhr.statusText,
+                            error: error,
+                            response: xhr.responseJSON
+                        });
+
+                        let errorMsg = null;
+
+                        // Parse JSON error response
+                        if (xhr.responseJSON) {
+                            if (xhr.responseJSON.errors) {
+                                // Validation errors
+                                errorMsg = '<strong>Validasi Gagal:</strong><br>';
+                                $.each(xhr.responseJSON.errors, function(field, messages) {
+                                    if (messages && messages.length > 0) {
+                                        errorMsg += '- ' + messages[0] + '<br>';
+                                    }
+                                });
+                            } else if (xhr.responseJSON.message) {
+                                // Direct error message
+                                errorMsg = xhr.responseJSON.message;
+                            }
+                        } else {
+                            // Fallback error messages
+                            if (xhr.status === 500) {
+                                errorMsg =
+                                    'Terjadi kesalahan di server. Silakan hubungi administrator.';
+                            } else if (xhr.status === 403) {
+                                errorMsg = 'Akses ditolak. Anda tidak memiliki izin.';
+                            } else if (xhr.status === 404) {
+                                errorMsg = 'Data tidak ditemukan.';
+                            } else {
+                                errorMsg = 'Gagal mengunggah dokumen: ' + error;
+                            }
+                        }
+
+                        // Show error alert
+                        if (errorMsg) {
+                            showErrorAlert(errorMsg);
+                        }
+
+                        // Reset button
+                        resetUploadButton($btn);
+                    }
+                });
+            });
+
+            // ✅ HELPER: Show success alert
+            function showSuccessAlert(message) {
+                const alertHtml = `
+                    <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-top: 15px;">
+                        <i class="bi bi-check-circle me-2"></i>${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+
+                $('#ajaxAlertContainer').html(alertHtml);
+                $('html, body').animate({
+                    scrollTop: 0
+                }, 300);
+            }
+
+            // ✅ HELPER: Show error alert
+            function showErrorAlert(message) {
+                const alertHtml = `
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 15px;">
+                        ${message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+
+                // Inject alert ke container
+                $('#ajaxAlertContainer').html(alertHtml);
+
+                // Scroll to top
+                $('html, body').animate({
+                    scrollTop: 0
+                }, 300);
+
+                // Auto dismiss after 15 seconds
+                setTimeout(() => {
+                    $('#ajaxAlertContainer .alert').fadeOut(function() {
+                        $(this).remove();
+                    });
+                }, 15000);
+            }
+
+            // ✅ HELPER: Reset button
+            function resetUploadButton($btn) {
+                $btn.prop('disabled', false).html(
+                    '<i class="bi bi-lock-fill me-2"></i>Verifikasi & Unggah'
+                );
+            }
+
+            // Modal reset
+            $('#passphraseModal').on('hidden.bs.modal', function() {
+                $('#passphrase_input').val('');
+                $('#passphrase-alert').addClass('d-none');
+                resetUploadButton($('#confirmUploadBtn'));
+            });
+
+            // Blockchain verification button
+            $('.send-blockchain-btn').on('click', function() {
+                const button = $(this);
+                const docId = button.data('doc-id');
+
+                button.prop('disabled', true).html(
+                '<i class="bi bi-hourglass-split me-1"></i>Memproses...');
+
+                console.log('Sending to blockchain:', {
+                    docId: docId,
+                    hash: button.data('hash'),
+                    signature: button.data('signature'),
+                    pubkey: button.data('pubkey')
+                });
+
+                // TODO: Implement blockchain submission AJAX here
+            });
         });
     </script>
 @endpush

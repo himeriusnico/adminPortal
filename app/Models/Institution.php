@@ -10,7 +10,7 @@ class Institution extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = ['name', 'email', 'alamat', 'public_key', 'ca_cert'];
+    protected $fillable = ['name', 'email', 'alamat', 'public_key', 'ca_cert', 'encrypted_key_id'];
 
     public function users()
     {
@@ -30,5 +30,9 @@ class Institution extends Model
     public function documents()
     {
         return $this->hasMany(Document::class);
+    }
+    public function encryptedKey()
+    {
+        return $this->hasOne(EncryptedKey::class, 'institution_id', 'id');
     }
 }

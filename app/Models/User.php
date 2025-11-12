@@ -29,7 +29,7 @@ class User extends Authenticatable
 
     public function institution()
     {
-        return $this->belongsTo(Institution::class);
+        return $this->belongsTo(Institution::class, 'institution_id', 'id');
     }
 
     public function student()
