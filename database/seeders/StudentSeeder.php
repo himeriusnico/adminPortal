@@ -5,36 +5,38 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Student;
 use App\Models\User;
-use Faker\Factory as Faker;
+use App\Models\Role;
+use App\Models\Institution;
+use Illuminate\Support\Facades\Hash;
 
 class StudentSeeder extends Seeder
 {
     public function run()
     {
-        $faker = Faker::create();
+        // Student::truncate();
 
-        // Misal ada 5 institusi
-        $totalInstitutions = 5;
+        $studentRole = Role::where('name', 'student')->first();
 
-        for ($inst = 1; $inst <= $totalInstitutions; $inst++) {
-            for ($i = 1; $i <= 5; $i++) { // 5 mahasiswa per institusi
+        foreach (Institution::all() as $institution) {
+            for ($i = 1; $i <= 5; $i++) {
+
+                // USER mahasiswa
                 $user = User::create([
-                    'name' => $faker->name,
-                    'email' => "student{$inst}_{$i}@example.com",
-                    'password' => bcrypt('password'),
-                    'role_id' => 3, // student = 3
-                    'institution_id' => $inst,
+                    'name' => "Mahasiswa {$institution->id} - {$i}",
+                    'email' => "student{$institution->id}_{$i}@example.com",
+                    'password' => Hash::make('password'),
+                    'role_id' => $studentRole->id
                 ]);
 
+                // RECORD mahasiswa
                 Student::create([
                     'user_id' => $user->id,
-                    'institution_id' => $inst,
-                    'student_id' => '2401' . str_pad(($inst * 10 + $i), 4, '0', STR_PAD_LEFT),
-                    'faculty_id' => $i % 5 + 1,
-                    'program_study_id' => $i % 5 + 1,
-                    'phone' => $faker->phoneNumber,
-                    'entry_year' => $faker->year($max = 'now'),
-                    'status' => 'active',
+                    'institution_id' => $institution->id,
+                    'student_id' => "SID{$institution->id}{$i}",
+                    'faculty_id' => null, // isi jika sudah punya faculty
+                    'program_study_id' => null,
+                    'entry_year' => 2023,
+                    'status' => 'active'
                 ]);
             }
         }

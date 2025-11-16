@@ -177,7 +177,7 @@ class InstitutionController extends Controller
                     'email' => $request->email,
                     'password' => Hash::make('password'),
                     'role_id' => $adminRole->id,
-                    'institution_id' => $institution->id
+                    'institution_id' => $institution->id 
                 ]);
             } catch (Throwable $e) {
                 Log::error("Create admin user failed: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);

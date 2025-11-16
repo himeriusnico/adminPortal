@@ -29,8 +29,9 @@ class User extends Authenticatable
 
     public function institution()
     {
-        return $this->belongsTo(Institution::class, 'institution_id', 'id');
+        return $this->belongsTo(Institution::class);
     }
+
 
     public function student()
     {
@@ -41,4 +42,4 @@ class User extends Authenticatable
     {
         return $this->hasManyThrough(Document::class, Student::class, 'user_id', 'student_id', 'id', 'id');
     }
-}   
+}

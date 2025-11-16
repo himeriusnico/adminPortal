@@ -144,25 +144,27 @@
                                     {{ $doc->created_at->format('d M Y') }}
                                 </td>
                                 <td>
-                                    @if ($doc->tx_id)
-                                        <div class="d-flex align-items-center">
-                                            <span class="badge bg-success me-2">Terverifikasi</span>
-                                            <small class="text-muted" title="TX: {{ $doc->tx_id }}">
-                                                <i class="bi bi-link-45deg"></i>
-                                            </small>
+                                    @if ($doc->tx_id == null)
+                                        <div class="d-flex flex-column gap-1">
+                                            <span class="badge bg-warning">Menunggu Verifikasi</span>
+
+                                            <button class="btn btn-sm btn-outline-primary send-blockchain-btn"
+                                                data-doc-id="{{ $doc->id }}" title="Kirim ke jaringan blockchain">
+                                                <i class="bi bi-shield-check me-1"></i> Verifikasi
+                                            </button>
                                         </div>
                                     @else
                                         <div class="d-flex flex-column gap-1">
-                                            <span class="badge bg-warning">Menunggu Verifikasi</span>
-                                            <button class="btn btn-sm btn-outline-primary send-blockchain-btn"
-                                                data-doc-id="{{ $doc->id }}" data-hash="{{ $doc->hash }}"
-                                                data-signature="{{ $doc->signature }}" data-pubkey="{{ $doc->pub_key }}"
-                                                title="Kirim ke jaringan blockchain untuk verifikasi">
-                                                <i class="bi bi-shield-check me-1"></i>Verifikasi
+                                            <span class="badge bg-success">Terverifikasi</span>
+
+                                            <button class="btn btn-sm btn-info view-blockchain-btn"
+                                                data-doc-id="{{ $doc->id }}">
+                                                <i class="bi bi-eye me-1"></i> View on Blockchain
                                             </button>
                                         </div>
                                     @endif
                                 </td>
+
                             </tr>
                         @empty
                             <tr>
@@ -171,6 +173,21 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- modal blockchain view verification --}}
+    <div class="modal fade" id="blockchainModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Blockchain Data</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <pre id="blockchainModalBody" style="background:#f5f5f5;padding:15px;border-radius:5px;"></pre>
+                </div>
             </div>
         </div>
     </div>
@@ -303,6 +320,16 @@
                 });
             });
 
+            $('.view-blockchain-btn').on('click', function() {
+                const id = $(this).data('doc-id');
+
+                $.get(`/documents/${id}/blockchain-data`, function(res) {
+                    $('#blockchainModalBody').text(JSON.stringify(res, null, 4));
+                    $('#blockchainModal').modal('show');
+                });
+            });
+
+
             // ✅ HELPER: Show success alert
             function showSuccessAlert(message) {
                 const alertHtml = `
@@ -363,7 +390,7 @@
                 const docId = button.data('doc-id');
 
                 button.prop('disabled', true).html(
-                '<i class="bi bi-hourglass-split me-1"></i>Memproses...');
+                    '<i class="bi bi-hourglass-split me-1"></i>Memproses...');
 
                 console.log('Sending to blockchain:', {
                     docId: docId,
@@ -372,7 +399,46 @@
                     pubkey: button.data('pubkey')
                 });
 
-                // TODO: Implement blockchain submission AJAX here
+                $.ajax({
+                    url: `/documents/${docId}/send-blockchain`,
+                    method: "POST",
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                    },
+                    dataType: "json",
+                    success: function(response) {
+                        console.log("Blockchain response:", response);
+
+                        if (response.success) {
+                            showSuccessAlert(response.message);
+
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            showErrorAlert(response.message);
+                            button.prop('disabled', false).html(
+                                '<i class="bi bi-shield-check me-1"></i>Verifikasi'
+                            );
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error("Blockchain error:", xhr);
+
+                        let msg = "Gagal memverifikasi ke blockchain.";
+
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            msg = xhr.responseJSON.message;
+                        }
+
+                        showErrorAlert(msg);
+
+                        button.prop('disabled', false).html(
+                            '<i class="bi bi-shield-check me-1"></i>Verifikasi'
+                        );
+                    }
+                });
+
             });
         });
     </script>

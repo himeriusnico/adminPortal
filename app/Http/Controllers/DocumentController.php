@@ -33,7 +33,7 @@ class DocumentController extends Controller
 
     $documentTypes = DocumentType::all();
 
-    return view('documents.index', compact('students', 'documents', 'documentTypes'));
+    return view('documents.index', compact('students', 'documents', 'documentTypes', 'admin'));
   }
 
   public function store(Request $request)
@@ -52,7 +52,6 @@ class DocumentController extends Controller
     Log::info('STORE: Validasi BERHASIL.');
 
     try {
-      // ========== ZONE 1: Auth User ==========
       $admin = Auth::user();
       Log::info('STORE: Admin retrieved', [
         'admin_id' => $admin?->id,
@@ -66,7 +65,6 @@ class DocumentController extends Controller
         ], 401);
       }
 
-      // ========== ZONE 2: Student ==========
       $student = Student::find($request->student_id);
       Log::info('STORE: Student retrieved', [
         'student_id' => $student?->id,
@@ -80,7 +78,6 @@ class DocumentController extends Controller
         ], 404);
       }
 
-      // ========== ZONE 3: Institution Check ==========
       if ($student->institution_id !== $admin->institution_id) {
         Log::warning('STORE: Institution mismatch', [
           'admin_inst' => $admin->institution_id,
@@ -94,7 +91,6 @@ class DocumentController extends Controller
 
       Log::info('STORE: Institution check passed');
 
-      // ========== ZONE 4: File ==========
       $file = $request->file('file');
       Log::info('STORE: File retrieved', [
         'filename' => $file?->getClientOriginalName(),
@@ -108,7 +104,6 @@ class DocumentController extends Controller
         ], 400);
       }
 
-      // ========== ZONE 5: Institution Relation ==========
       Log::info('STORE: Before accessing institution relation', [
         'admin_id' => $admin->id,
         'institution_id' => $admin->institution_id,
@@ -128,7 +123,6 @@ class DocumentController extends Controller
         ], 404);
       }
 
-      // ========== ZONE 6: Encrypted Key ==========
       Log::info('STORE: Before accessing encrypted key relation', [
         'institution_id' => $institution->id,
         'institution_name' => $institution->name,
@@ -162,18 +156,20 @@ class DocumentController extends Controller
         ], 409);
       }
 
-      // ========== ZONE 7: Decrypt Private Key ==========
       $passphrase = $request->input('passphrase');
 
+
+      //ini buat ulang lagi kunci aes nya
       $derivedKey = hash_pbkdf2(
         'sha256',
         $passphrase,
         hex2bin($encryptedKey->salt),
         100000,
-        32,
+        32, //nilai dari kunci e
         true
       );
 
+      //dekripsi aes
       $privateKeyPem = openssl_decrypt(
         $encryptedKey->encrypted_private_key,
         'aes-256-cbc',
@@ -192,7 +188,6 @@ class DocumentController extends Controller
 
       Log::info('STORE: Kunci privat berhasil didekripsi.');
 
-      // ========== ZONE 8: Digital Signature ==========
       try {
         $hashValueBinary = hash_file('sha256', $file->getRealPath(), true);
 
@@ -217,7 +212,6 @@ class DocumentController extends Controller
         ], 400);
       }
 
-      // ========== ZONE 9: Store File ==========
       try {
         $filename = time() . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
 
@@ -238,7 +232,6 @@ class DocumentController extends Controller
         ], 500);
       }
 
-      // ========== ZONE 10: Save to Database ==========
       try {
         $document = Document::create([
           'student_id' => $student->id,
@@ -263,39 +256,44 @@ class DocumentController extends Controller
         ], 500);
       }
 
-      // ========== ZONE 11: Submit to Blockchain ==========
-      try {
-        $documentTypeName = DocumentType::find($request->document_type_id)->name;
-        $institutionPublicKey = $institution->public_key;
+      // // ========== ZONE 11: Submit to Blockchain ==========
+      // // Temporarily disable submission to blockchain — comment out the network call
+      // /*
+      // try {
+      //   $documentTypeName = DocumentType::find($request->document_type_id)->name;
+      //   $institutionPublicKey = $institution->public_key;
 
-        $payload = [
-          'documentId' => $admin->institution_id . '-' . str_pad($document->id, 6, '0', STR_PAD_LEFT),
-          'studentId' => $student->id,
-          'institutionId' => $admin->institution_id,
-          'filename' => $filename,
-          'documentType' => $documentTypeName,
-          'hash' => $hashDocument,
-          'signature' => $signatureBase64,
-          'institutionPublicKey' => $institutionPublicKey,
-          'createdAt' => now()->toIso8601String(),
-          'status' => 'issued'
-        ];
+      //   $payload = [
+      //     'documentId' => $admin->institution_id . '-' . str_pad($document->id, 6, '0', STR_PAD_LEFT),
+      //     'studentId' => $student->id,
+      //     'institutionId' => $admin->institution_id,
+      //     'filename' => $filename,
+      //     'documentType' => $documentTypeName,
+      //     'hash' => $hashDocument,
+      //     'signature' => $signatureBase64,
+      //     'institutionPublicKey' => $institutionPublicKey,
+      //     'createdAt' => now()->toIso8601String(),
+      //     'status' => 'issued'
+      //   ];
 
-        Log::info('STORE: Submitting to blockchain', [
-          'payload' => $payload,
-        ]);
+      //   Log::info('STORE: Submitting to blockchain', [
+      //     'payload' => $payload,
+      //   ]);
 
-        $response = Http::post(config('blockchain.api_url') . '/submitSignature', $payload);
+      //   $response = Http::post(config('blockchain.api_url') . '/submitSignature', $payload);
 
-        if (!$response->successful()) {
-          Log::warning('STORE: Blockchain submission failed: ' . $response->body());
-        } else {
-          Log::info('STORE: Blockchain submission successful');
-        }
-      } catch (\Exception $e) {
-        Log::error('STORE: Blockchain submission error: ' . $e->getMessage());
-        // Tidak return error, tetap success karena dokumen sudah tersimpan
-      }
+      //   if (!$response->successful()) {
+      //     Log::warning('STORE: Blockchain submission failed: ' . $response->body());
+      //   } else {
+      //     Log::info('STORE: Blockchain submission successful');
+      //   }
+      // } catch (\Exception $e) {
+      //   Log::error('STORE: Blockchain submission error: ' . $e->getMessage());
+      //   // Tidak return error, tetap success karena dokumen sudah tersimpan
+      // }
+      // */
+
+      // Log::info('STORE: Blockchain submission skipped (temporarily disabled)');
 
       // ========== ZONE 12: Success ==========
       Log::info('STORE: Proses upload dokumen BERHASIL selesai');
@@ -342,5 +340,83 @@ class DocumentController extends Controller
     } catch (\Exception $e) {
       return back()->with('error', 'Gagal membuka dokumen: ' . $e->getMessage());
     }
+  }
+
+  public function sendToBlockchain(Document $document)
+  {
+    $admin = Auth::user();
+    $institution = $admin->institution;
+    $student = $document->student;
+    $documentType = $document->documentType;
+
+    $payload = [
+      // 'documentId' => $admin->institution_id . '-' . str_pad($document->id, 6, '0', STR_PAD_LEFT),
+      'documentId' => (string) $document->id,
+      'studentId' => $student->id,
+      'institutionId' => $admin->institution_id,
+      'filename' => $document->filename,
+      'documentType' => $documentType->name,
+      'hash' => $document->hash,
+      'signature' => $document->signature,
+      'institutionPublicKey' => $institution->public_key,
+      'createdAt' => $document->created_at->toIso8601String(),
+      'status' => 'issued',
+    ];
+
+    $url = config('blockchain.api_url') . '/api/documents';
+
+    try {
+      $response = Http::timeout(10)->post($url, $payload);
+
+      if ($response->successful()) {
+
+        $result = $response->json();
+
+        // simpan hash transaksi
+        $document->tx_id = $result['txId'];
+        $document->save();
+
+        return response()->json([
+          'success' => true,
+          'message' => 'Berhasil diverifikasi ke blockchain',
+          'tx_id' => $result['txId']
+        ]);
+      }
+
+      Log::warning('Blockchain rejected the request', [
+        'url' => $url,
+        'payload' => $payload,
+        'response_body' => $response->body(),
+      ]);
+
+      return response()->json([
+        'success' => false,
+        'message' => 'Gagal mengirim ke blockchain: ' . $response->body(),
+      ], 500);
+    } catch (\Throwable $e) {
+      Log::error('Blockchain submission error', [
+        'url' => $url,
+        'payload' => $payload,
+        'exception' => $e->getMessage(),
+      ]);
+
+      return response()->json([
+        'success' => false,
+        'message' => 'Terjadi kesalahan saat mengirim ke blockchain: ' . $e->getMessage(),
+      ], 500);
+    }
+  }
+
+  public function getBlockchainData($id)
+  {
+    $document = Document::findOrFail($id);
+
+    $response = Http::get(config('blockchain.api_url') . "/api/documents/" . $document->id . "/history");
+
+    if ($response->failed()) {
+      return response()->json(['error' => 'Gagal mengambil data blockchain'], 500);
+    }
+
+    return $response->json();
   }
 }

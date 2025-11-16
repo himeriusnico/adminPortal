@@ -4,38 +4,36 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\User;
+use App\Models\Role;
 use App\Models\Institution;
 use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
-  public function run(): void
+  public function run()
   {
-    // 1️⃣ Super Admin
-    User::updateOrCreate(
-      ['email' => 'superadmin@ta-sukses.id'],
-      [
-        'name' => 'Super Admin',
-        'email_verified_at' => now(),
-        'password' => Hash::make('password'),
-        'role_id' => 1, // super_admin
-        'institution_id' => null,
-      ]
-    );
+    // User::truncate();
 
-    // 2️⃣ Admin per universitas
-    $institutions = Institution::all();
-    foreach ($institutions as $institution) {
-      User::updateOrCreate(
-        ['email' => 'admin@' . strtolower(str_replace(' ', '', $institution->name)) . '.ac.id'],
-        [
-          'name' => 'Admin ' . $institution->name,
-          'email_verified_at' => now(),
-          'password' => Hash::make('password'),
-          'role_id' => 2, // admin
-          'institution_id' => $institution->id,
-        ]
-      );
+    $adminRole = Role::where('name', 'admin')->first();
+    $superAdminRole = Role::where('name', 'super_admin')->first();
+
+    // SUPER ADMIN SISTEM
+    User::create([
+      'name' => 'Super Admin',
+      'email' => 'superadmin@example.com',
+      'password' => Hash::make('password'),
+      'role_id' => $superAdminRole->id
+    ]);
+
+    // ADMIN UNTUK SETIAP INSTITUSI
+    foreach (Institution::all() as $institution) {
+      User::create([
+        'name' => $institution->name . ' Admin',
+        'email' => 'admin_' . $institution->id . '@example.com',
+        'password' => Hash::make('password'),
+        'role_id' => $adminRole->id,
+        // TIDAK ADA institution_id di tabel USER → relasi ditangani lewat Student
+      ]);
     }
   }
 }

@@ -111,6 +111,11 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
     Route::get('/documents/{document}/view', [DocumentController::class, 'viewDocument'])->name('documents.view');
 
+    Route::post('/documents/{document}/send-blockchain', [DocumentController::class, 'sendToBlockchain']);
+    Route::get('/documents/{id}/blockchain-data', [DocumentController::class, 'getBlockchainData'])->name('documents.blockchain');
+
+
+
     // Faculty Management Routes
     Route::post('/faculties', [FacultyController::class, 'store'])->name('faculties.store');
     Route::delete('/faculties/{faculty}', [FacultyController::class, 'destroy'])->name('faculties.destroy');
