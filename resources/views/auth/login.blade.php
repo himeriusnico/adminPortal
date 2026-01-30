@@ -54,9 +54,9 @@
                         </button>
 
                         <!-- Register Link -->
-                        <div class="auth-footer">
+                        {{-- <div class="auth-footer">
                             <p>Belum punya akun? <a href="{{ route('register') }}">Daftar di sini</a></p>
-                        </div>
+                        </div> --}}
                     </form>
                 </div>
             </div>

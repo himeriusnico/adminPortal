@@ -105,7 +105,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($institutions as $institution)
+                        @foreach($institutions as $institution)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>
@@ -113,9 +113,7 @@
                                         <div class="institution-logo me-3">
                                             {{ substr($institution->name, 0, 2) }}
                                         </div>
-                                        <div>
-                                            <strong>{{ $institution->name }}</strong>
-                                        </div>
+                                        <div><strong>{{ $institution->name }}</strong></div>
                                     </div>
                                 </td>
                                 <td>
@@ -135,49 +133,33 @@
                                 <td>{{ $institution->created_at->format('d M Y') }}</td>
                                 <td>
                                     <div class="action-buttons">
-                                        <button class="btn btn-sm btn-info" title="Detail"
-                                            onclick="showDetail({{ $institution->id }})">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-warning" title="Edit"
-                                            onclick="editInstitution({{ $institution->id }})">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-danger" title="Hapus"
-                                            onclick="deleteInstitution({{ $institution->id }})">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        <button class="btn btn-sm btn-info" onclick="showDetail({{ $institution->id }})"><i
+                                                class="bi bi-eye"></i></button>
+                                        <button class="btn btn-sm btn-warning"
+                                            onclick="editInstitution({{ $institution->id }})"><i
+                                                class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-sm btn-danger"
+                                            onclick="deleteInstitution({{ $institution->id }})"><i
+                                                class="bi bi-trash"></i></button>
                                     </div>
                                 </td>
                             </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="text-center py-4">
-                                    <i class="bi bi-building display-1 text-muted d-block mb-3"></i>
-                                    <h5 class="text-muted">Belum ada data institusi</h5>
-                                    <p class="text-muted">Mulai dengan menambahkan institusi baru</p>
-                                    <button class="btn btn-primary" data-bs-toggle="modal"
-                                        data-bs-target="#addInstitutionModal">
-                                        <i class="bi bi-building-add me-2"></i>Tambah Institusi Pertama
-                                    </button>
-                                </td>
-                            </tr>
-                        @endforelse
+                        @endforeach
                     </tbody>
                 </table>
             </div>
 
             <!-- Pagination -->
             {{-- @if ($institutions->hasPages())
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <div class="text-muted">
-                        Menampilkan {{ $institutions->firstItem() }} - {{ $institutions->lastItem() }} dari
-                        {{ $institutions->total() }} institusi
-                    </div>
-                    <nav>
-                        {{ $institutions->links() }}
-                    </nav>
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted">
+                    Menampilkan {{ $institutions->firstItem() }} - {{ $institutions->lastItem() }} dari
+                    {{ $institutions->total() }} institusi
                 </div>
+                <nav>
+                    {{ $institutions->links() }}
+                </nav>
+            </div>
             @endif --}}
         </div>
     </div>
@@ -213,9 +195,15 @@
                                 placeholder="Masukkan alamat lengkap institusi"></textarea>
                         </div>
                         <div class="mb-3">
-                            <label for="passphrase" class="form-label">Passphrase Admin *</label>
-                            <input type="password" class="form-control" id="passphrase" name="passphrase" required
-                                placeholder="Masukkan passphrase untuk enkripsi private key">
+                            <label for="passphrase" class="form-label fw-bold">Passphrase Admin *</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="passphrase" name="passphrase" required
+                                    placeholder="Masukkan passphrase untuk enkripsi private key">
+                                <button class="btn btn-outline-secondary toggle-passphrase" type="button"
+                                    data-target="passphrase">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
                             <small class="text-muted">Passphrase ini hanya diketahui admin. Gunakan kombinasi kuat dan
                                 jangan lupa untuk dicatat!</small>
                         </div>
@@ -292,13 +280,15 @@
                             <tr>
                                 <th>Public Key</th>
                                 <td>
-                                    <pre id="detailPublicKey" style="white-space: pre-wrap; word-break: break-word; max-height:300px; overflow-y:auto;"></pre>
+                                    <pre id="detailPublicKey"
+                                        style="white-space: pre-wrap; word-break: break-word; max-height:300px; overflow-y:auto;"></pre>
                                 </td>
                             </tr>
                             {{-- <tr>
                                 <th>CA Certificate</th>
                                 <td>
-                                    <pre id="detailCACert" style="white-space: pre-wrap; word-break: break-word; max-height:300px; overflow-y:auto;"></pre>
+                                    <pre id="detailCACert"
+                                        style="white-space: pre-wrap; word-break: break-word; max-height:300px; overflow-y:auto;"></pre>
                                 </td>
                             </tr> --}}
 
@@ -323,6 +313,29 @@
 
     @push('scripts')
         <script>
+            $(document).ready(function () {
+                // Logika Toggle Password/Passphrase (Global)
+                $(document).on('click', '.toggle-passphrase, .toggle-password', function () {
+                    const targetId = $(this).data('target');
+                    const input = $('#' + targetId);
+                    const icon = $(this).find('i');
+
+                    if (input.attr('type') === 'password') {
+                        input.attr('type', 'text');
+                        icon.removeClass('bi-eye').addClass('bi-eye-slash');
+                    } else {
+                        input.attr('type', 'password');
+                        icon.removeClass('bi-eye-slash').addClass('bi-eye');
+                    }
+                });
+
+                // Opsional: Reset type input saat modal ditutup
+                $('#addInstitutionModal').on('hidden.bs.modal', function () {
+                    const passInput = $('#passphrase');
+                    passInput.attr('type', 'password');
+                    $(this).find('.toggle-passphrase i').removeClass('bi-eye-slash').addClass('bi-eye');
+                });
+            });
             // $(document).ready(function() {
             //     // Inisialisasi DataTables
             //     $('#institutionsTable').DataTable({
@@ -362,8 +375,11 @@
             //     });
             // });
 
-            $(document).ready(function() {
+            $(document).ready(function () {
                 initDataTable('#institutionsTable', {
+                    language: {
+                        zeroRecords: "Belum ada data institusi. Silakan tambah institusi baru."
+                    },
                     order: [
                         [4]
                     ], // Default urut berdasarkan tanggal dibuat
@@ -386,7 +402,7 @@
             //     });
             // });
 
-            document.getElementById('btnGenerateCertificate').addEventListener('click', function() {
+            document.getElementById('btnGenerateCertificate').addEventListener('click', function () {
                 const form = document.getElementById('addInstitutionForm');
                 const formData = new FormData(form);
 
@@ -398,7 +414,7 @@
                 // Pastikan passphrase minimal misal 8 karakter
                 const passphrase = formData.get('passphrase');
                 console.log('Passphrase:', passphrase);
-                
+
                 if (!passphrase || passphrase.length < 8) {
                     Swal.fire({
                         title: "Passphrase terlalu pendek!",
@@ -421,14 +437,22 @@
                     showLoaderOnConfirm: true,
                     preConfirm: () => {
                         return fetch("{{ route('institutions.store') }}", {
-                                method: 'POST',
-                                headers: {
-                                    'X-CSRF-TOKEN': form.querySelector('input[name=_token]').value,
-                                    'Accept': 'application/json'
-                                },
-                                body: formData
-                            })
-                            .then(response => {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': form.querySelector('input[name=_token]').value,
+                                'Accept': 'application/json'
+                            },
+                            body: formData
+                        })
+                            .then(async response => {
+                                if (response.status === 422) {
+                                    const data = await response.json();
+                                    // Tampilkan pesan error validasi
+                                    Swal.showValidationMessage(
+                                        data.message + ': ' + Object.values(data.errors).flat().join(', ')
+                                    );
+                                    throw new Error('Pendaftaran gagal: Nama atau email institusi telah digunakan. Mohon periksa kembali data Anda.');
+                                }
                                 if (!response.ok) {
                                     throw new Error('Network response was not ok');
                                 }
@@ -446,11 +470,11 @@
                             Swal.fire({
                                 title: "Berhasil!",
                                 html: `
-                        <p><strong>${formData.get('name')}</strong> berhasil ditambahkan!</p>
-                        <p class="text-muted mb-0">✓ ECDSA Keypair telah digenerate</p>
-                        <p class="text-muted mb-0">✓ Private key terenkripsi dengan passphrase</p>
-                        <p class="text-muted mb-0">✓ Data institusi telah disimpan</p>
-                    `,
+                                        <p><strong>${formData.get('name')}</strong> berhasil ditambahkan!</p>
+                                        <p class="text-muted mb-0">✓ ECDSA Keypair telah digenerate</p>
+                                        <p class="text-muted mb-0">✓ Private key terenkripsi dengan passphrase</p>
+                                        <p class="text-muted mb-0">✓ Data institusi telah disimpan</p>
+                                    `,
                                 icon: "success",
                                 confirmButtonColor: "#198754",
                             }).then(() => {

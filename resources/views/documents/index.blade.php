@@ -46,8 +46,7 @@
                             name="student_id" required>
                             <option value="" disabled selected>-- Pilih Mahasiswa --</option>
                             @forelse ($students as $student)
-                                <option value="{{ $student->id }}"
-                                    {{ old('student_id') == $student->id ? 'selected' : '' }}>
+                                <option value="{{ $student->id }}" {{ old('student_id') == $student->id ? 'selected' : '' }}>
                                     {{ $student->user->name ?? 'User Hilang' }} (NIM: {{ $student->student_id }})
                                 </option>
                             @empty
@@ -62,17 +61,17 @@
                             name="document_type_id" required>
                             <option value="" disabled selected>-- Pilih Jenis --</option>
                             @foreach ($documentTypes as $type)
-                                <option value="{{ $type->id }}"
-                                    {{ old('document_type_id') == $type->id ? 'selected' : '' }}>
-                                    {{ $type->name }} </option>
+                                <option value="{{ $type->id }}" {{ old('document_type_id') == $type->id ? 'selected' : '' }}>
+                                    {{ $type->name }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
 
                     <div class="col-md-4 mb-3">
                         <label for="file" class="form-label">File PDF (Maks 2MB) *</label>
-                        <input class="form-control @error('file') is-invalid @enderror" type="file" id="file"
-                            name="file" accept=".pdf" required>
+                        <input class="form-control @error('file') is-invalid @enderror" type="file" id="file" name="file"
+                            accept=".pdf" required>
                     </div>
                 </div>
 
@@ -81,31 +80,45 @@
                 </button>
 
                 <input type="hidden" name="passphrase" id="hiddenPassphrase" value="">
+
+                <input type="hidden" name="force_replace" id="force_replace" value="false">
             </form>
         </div>
     </div>
 
     <div class="modal fade" id="passphraseModal" tabindex="-1" aria-labelledby="passphraseModalLabel" aria-hidden="true">
         <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="passphraseModalLabel">Konfirmasi Unggah & Tanda Tangan Digital</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="passphraseModalLabel">
+                        <i class="bi bi-shield-check me-2"></i>Konfirmasi Unggah & Tanda Tangan Digital
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <p>Masukkan **Passphrase Kunci Privat Institusi** Anda untuk mendekripsi kunci dan menandatangani
-                        dokumen ini secara digital sebelum diunggah.</p>
+                        dokumen ini secara digital.</p>
+
                     <div class="mb-3">
-                        <label for="passphrase_input" class="form-label">Passphrase *</label>
-                        <input type="password" class="form-control" id="passphrase_input" required autocomplete="off">
+                        <label for="passphrase_input" class="form-label fw-bold">Passphrase *</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="passphrase_input" required autocomplete="off"
+                                placeholder="Masukkan passphrase kunci privat">
+                            <button class="btn btn-outline-secondary toggle-passphrase" type="button"
+                                data-target="passphrase_input">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
                     </div>
+
                     <div id="passphrase-alert" class="alert alert-danger d-none" role="alert">
-                        Passphrase tidak boleh kosong.
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> Passphrase tidak boleh kosong.
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer border-0">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary" id="confirmUploadBtn">
+                    <button type="button" class="btn btn-primary px-4" id="confirmUploadBtn">
                         <i class="bi bi-lock-fill me-2"></i>Verifikasi & Unggah
                     </button>
                 </div>
@@ -128,6 +141,7 @@
                             <th>Nama File</th>
                             <th>Tgl. Upload</th>
                             <th>Status</th>
+                            <th>Hapus</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -136,10 +150,14 @@
                                 <td>{{ $doc->student->user->name ?? 'N/A' }}</td>
                                 <td><code>{{ $doc->student->student_id ?? 'N/A' }}</code></td>
                                 <td>
-                                    <span
-                                        class="badge bg-secondary">{{ $doc->documentType->name ?? 'Jenis Hilang' }}</span>
+                                    <span class="badge bg-secondary">{{ $doc->documentType->name ?? 'Jenis Hilang' }}</span>
                                 </td>
-                                <td><i class="bi bi-file-pdf text-danger me-2"></i>{{ $doc->filename }}</td>
+                                <td>
+                                    <a href="{{ route('documents.view', $doc->id) }}" target="_blank"
+                                        style="text-decoration:none">
+                                        <i class="bi bi-file-pdf text-danger me-2"></i>{{ $doc->filename }}
+                                    </a>
+                                </td>
                                 <td data-order="{{ $doc->created_at->timestamp }}">
                                     {{ $doc->created_at->format('d M Y') }}
                                 </td>
@@ -155,20 +173,37 @@
                                         </div>
                                     @else
                                         <div class="d-flex flex-column gap-1">
-                                            <span class="badge bg-success">Terverifikasi</span>
+                                            <span class="badge bg-success">Terverifikasi Dalam Blockchain</span>
 
-                                            <button class="btn btn-sm btn-info view-blockchain-btn"
-                                                data-doc-id="{{ $doc->id }}">
+                                            <button class="btn btn-sm btn-info view-blockchain-btn" data-doc-id="{{ $doc->id }}">
                                                 <i class="bi bi-eye me-1"></i> View on Blockchain
                                             </button>
                                         </div>
                                     @endif
                                 </td>
 
+                                <td>
+                                    @if (is_null($doc->tx_id))
+                                        <form action="{{ route('documents.destroy', $doc->id) }}" method="POST"
+                                            class="doc-delete-form">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus dokumen">
+                                                <i class="bi bi-trash me-1"></i> Hapus
+                                            </button>
+                                        </form>
+                                    @else
+                                        <button class="btn btn-sm btn-outline-secondary"
+                                            title="Sudah diverifikasi; tidak dapat dihapus" disabled>
+                                            <i class="bi bi-trash me-1"></i> Hapus
+                                        </button>
+                                    @endif
+                                </td>
+
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center">Belum ada dokumen yang diunggah.</td>
+                                <td colspan="7" class="text-center">Belum ada dokumen yang diunggah.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -195,7 +230,40 @@
 
 @push('scripts')
     <script>
-        $(document).ready(function() {
+        document.addEventListener('DOMContentLoaded', function () {
+            // Fungsi umum untuk toggle password/passphrase
+            const toggleButtons = document.querySelectorAll('.toggle-passphrase, .toggle-password');
+
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', function () {
+                    const targetId = this.getAttribute('data-target');
+                    const input = document.getElementById(targetId);
+                    const icon = this.querySelector('i');
+
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        icon.classList.replace('bi-eye', 'bi-eye-slash');
+                    } else {
+                        input.type = 'password';
+                        icon.classList.replace('bi-eye-slash', 'bi-eye');
+                    }
+                });
+            });
+
+            // Reset input saat modal ditutup (opsional demi keamanan)
+            const passphraseModal = document.getElementById('passphraseModal');
+            if (passphraseModal) {
+                passphraseModal.addEventListener('hidden.bs.modal', function () {
+                    const input = document.getElementById('passphrase_input');
+                    input.type = 'password'; // Kembalikan ke tipe password
+                    input.value = ''; // Kosongkan input demi keamanan
+                    const icon = this.querySelector('.toggle-passphrase i');
+                    icon.classList.replace('bi-eye-slash', 'bi-eye');
+                    document.getElementById('passphrase-alert').classList.add('d-none');
+                });
+            }
+        });
+        $(document).ready(function () {
             @if ($documents->count() > 0)
                 $('#documentsTable').DataTable({
                     language: {
@@ -215,18 +283,37 @@
             @endif
 
             // ✅ SUBMIT VIA AJAX - Handle JSON Response
-            $('#confirmUploadBtn').on('click', function() {
+            $('#confirmUploadBtn').on('click', function () {
                 const passphrase = $('#passphrase_input').val();
                 const form = $('#documentUploadForm');
 
                 console.log('Passphrase modal value:', passphrase);
                 console.log('Passphrase length:', passphrase.length);
 
-                if (passphrase === 0 || passphrase === '') {
+                // Passphrase must be at least 8 chars (mirror backend)
+                if (!passphrase || passphrase.length < 8) {
                     $('#passphrase-alert')
                         .removeClass('d-none')
-                        .text('Passphrase tidak boleh kosong.');
-                    console.log('Validation failed: Passphrase is empty.');
+                        .text('Passphrase wajib diisi (min. 8 karakter).');
+                    console.log('Validation failed: Passphrase too short or empty.');
+                    return;
+                }
+
+                // Client-side file validation to avoid uploading large/invalid files
+                const fileInput = document.getElementById('file');
+                const file = fileInput?.files?.[0];
+                if (!file) {
+                    showErrorAlert('Silakan pilih file PDF untuk diunggah.');
+                    return;
+                }
+                const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+                if (!isPdf) {
+                    showErrorAlert('File harus dalam bentuk PDF.');
+                    return;
+                }
+                const maxSize = 2 * 1024 * 1024; // 2MB
+                if (file.size > maxSize) {
+                    showErrorAlert('Ukuran file maksimal 2MB.');
                     return;
                 }
 
@@ -250,10 +337,18 @@
                     dataType: 'json', // ✅ EXPECT JSON, not HTML
                     timeout: 60000,
 
-                    success: function(response, status, xhr) {
+                    success: function (response, status, xhr) {
                         console.log('Upload success!', response);
 
                         if (response.success) {
+                            // Bukti backend: tampilkan hash & signature di console
+                            if (response.hash) {
+                                console.log('Nilai hash:', response.hash);
+                            }
+                            if (response.signature) {
+                                console.log('Nilai signature:', response.signature);
+                            }
+                            $('#forceReplace').val('false');
                             // ✅ Show success message
                             showSuccessAlert(response.message);
 
@@ -271,13 +366,38 @@
                         }
                     },
 
-                    error: function(xhr, status, error) {
+                    error: function (xhr, status, error) {
                         console.error('Upload error:', {
                             status: xhr.status,
                             statusText: xhr.statusText,
                             error: error,
                             response: xhr.responseJSON
                         });
+
+                        // ⛔ Dokumen sudah ada (Business Rule Violation)
+                        if (xhr.status === 409 && xhr.responseJSON?.code === 'DOCUMENT_ALREADY_EXISTS') {
+                            Swal.fire({
+                                title: 'Dokumen Sudah Ada',
+                                text: xhr.responseJSON.message,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Ya, Ganti Dokumen',
+                                cancelButtonText: 'Batal',
+                                reverseButtons: true
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    // Set flag replace
+                                    $('#forceReplace').val('true');
+
+                                    // Kirim ulang request
+                                    $('#confirmUploadBtn').trigger('click');
+                                } else {
+                                    resetUploadButton($('#confirmUploadBtn'));
+                                }
+                            });
+
+                            return; // ⛔ STOP error handler lain
+                        }
 
                         let errorMsg = null;
 
@@ -286,7 +406,7 @@
                             if (xhr.responseJSON.errors) {
                                 // Validation errors
                                 errorMsg = '<strong>Validasi Gagal:</strong><br>';
-                                $.each(xhr.responseJSON.errors, function(field, messages) {
+                                $.each(xhr.responseJSON.errors, function (field, messages) {
                                     if (messages && messages.length > 0) {
                                         errorMsg += '- ' + messages[0] + '<br>';
                                     }
@@ -320,10 +440,10 @@
                 });
             });
 
-            $('.view-blockchain-btn').on('click', function() {
+            $('.view-blockchain-btn').on('click', function () {
                 const id = $(this).data('doc-id');
 
-                $.get(`/documents/${id}/blockchain-data`, function(res) {
+                $.get(`/documents/${id}/blockchain-data`, function (res) {
                     $('#blockchainModalBody').text(JSON.stringify(res, null, 4));
                     $('#blockchainModal').modal('show');
                 });
@@ -333,11 +453,11 @@
             // ✅ HELPER: Show success alert
             function showSuccessAlert(message) {
                 const alertHtml = `
-                    <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-top: 15px;">
-                        <i class="bi bi-check-circle me-2"></i>${message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
+                                                                    <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-top: 15px;">
+                                                                        <i class="bi bi-check-circle me-2"></i>${message}
+                                                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                                                    </div>
+                                                                `;
 
                 $('#ajaxAlertContainer').html(alertHtml);
                 $('html, body').animate({
@@ -345,14 +465,35 @@
                 }, 300);
             }
 
+            // Validate file immediately when selected (optional quick feedback)
+            const fileEl = document.getElementById('file');
+            if (fileEl) {
+                fileEl.addEventListener('change', function () {
+                    const file = this.files?.[0];
+                    if (!file) return;
+                    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+                    if (!isPdf) {
+                        showErrorAlert('File harus dalam bentuk PDF.');
+                        this.value = '';
+                        return;
+                    }
+                    const maxSize = 2 * 1024 * 1024; // 2MB
+                    if (file.size > maxSize) {
+                        showErrorAlert('Ukuran file maksimal 2MB.');
+                        this.value = '';
+                        return;
+                    }
+                });
+            }
+
             // ✅ HELPER: Show error alert
             function showErrorAlert(message) {
                 const alertHtml = `
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 15px;">
-                        ${message}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                `;
+                                                                    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 15px;">
+                                                                        ${message}
+                                                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                                                    </div>
+                                                                `;
 
                 // Inject alert ke container
                 $('#ajaxAlertContainer').html(alertHtml);
@@ -364,10 +505,43 @@
 
                 // Auto dismiss after 15 seconds
                 setTimeout(() => {
-                    $('#ajaxAlertContainer .alert').fadeOut(function() {
+                    $('#ajaxAlertContainer .alert').fadeOut(function () {
                         $(this).remove();
                     });
                 }, 15000);
+            }
+
+            // ✅ HELPER: Show duplicate details via SweetAlert2
+            function showDuplicateAlert(existing, message) {
+                const createdAt = existing?.createdAt ? new Date(existing.createdAt).toLocaleString() : '-';
+                const docType = existing?.documentType || existing?.docType || '-';
+                const filename = existing?.filename || '-';
+                const hash = existing?.hash || existing?.documentHash || '-';
+                const status = existing?.status || '-';
+                const studentId = existing?.studentId || '-';
+                const institutionId = existing?.institutionId || '-';
+
+                const html = `
+                                                <div class="text-start">
+                                                    <p class="mb-2">${message || 'Dokumen sudah tercatat di blockchain sebelumnya.'}</p>
+                                                    <ul class="mb-0" style="list-style:none; padding-left:0;">
+                                                        <li><strong>Tanggal Tercatat:</strong> ${createdAt}</li>
+                                                        <li><strong>Nama File:</strong> ${filename}</li>
+                                                        <li><strong>Jenis Dokumen:</strong> ${docType}</li>
+                                                        <li><strong>Status:</strong> ${status}</li>
+                                                        <li><strong>Hash:</strong> <code>${hash}</code></li>
+                                                        <li><strong>Student ID:</strong> ${studentId}</li>
+                                                        <li><strong>Institution ID:</strong> ${institutionId}</li>
+                                                    </ul>
+                                                </div>
+                                            `;
+
+                Swal.fire({
+                    title: 'Dokumen Sudah Tercatat',
+                    html: html,
+                    icon: 'info',
+                    confirmButtonText: 'Tutup'
+                });
             }
 
             // ✅ HELPER: Reset button
@@ -378,67 +552,117 @@
             }
 
             // Modal reset
-            $('#passphraseModal').on('hidden.bs.modal', function() {
+            $('#passphraseModal').on('hidden.bs.modal', function () {
                 $('#passphrase_input').val('');
                 $('#passphrase-alert').addClass('d-none');
                 resetUploadButton($('#confirmUploadBtn'));
             });
 
             // Blockchain verification button
-            $('.send-blockchain-btn').on('click', function() {
+            $('.send-blockchain-btn').on('click', function () {
                 const button = $(this);
                 const docId = button.data('doc-id');
+                Swal.fire({
+                    title: 'Konfirmasi Verifikasi',
+                    text: 'Apakah Anda yakin? Data pada blockchain bersifat permanen dan tidak dapat dimodifikasi.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0d6efd',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, lanjutkan',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (!result.isConfirmed) {
+                        return;
+                    }
 
-                button.prop('disabled', true).html(
-                    '<i class="bi bi-hourglass-split me-1"></i>Memproses...');
+                    button.prop('disabled', true).html(
+                        '<i class="bi bi-hourglass-split me-1"></i>Memproses...');
 
-                console.log('Sending to blockchain:', {
-                    docId: docId,
-                    hash: button.data('hash'),
-                    signature: button.data('signature'),
-                    pubkey: button.data('pubkey')
-                });
+                    console.log('Sending to blockchain:', {
+                        docId: docId,
+                        hash: button.data('hash'),
+                        signature: button.data('signature'),
+                        pubkey: button.data('pubkey')
+                    });
 
-                $.ajax({
-                    url: `/documents/${docId}/send-blockchain`,
-                    method: "POST",
-                    data: {
-                        _token: "{{ csrf_token() }}",
-                    },
-                    dataType: "json",
-                    success: function(response) {
-                        console.log("Blockchain response:", response);
+                    $.ajax({
+                        url: `/documents/${docId}/send-blockchain`,
+                        method: "POST",
+                        data: {
+                            _token: "{{ csrf_token() }}",
+                        },
+                        dataType: "json",
+                        success: function (response) {
+                            console.log("Blockchain response:", response);
 
-                        if (response.success) {
-                            showSuccessAlert(response.message);
+                            if (response.success) {
+                                showSuccessAlert(response.message);
 
-                            setTimeout(() => {
-                                location.reload();
-                            }, 1500);
-                        } else {
-                            showErrorAlert(response.message);
+                                setTimeout(() => {
+                                    location.reload();
+                                }, 10000);
+                            } else if (response?.status === 'duplicate' && response?.existing) {
+                                showDuplicateAlert(response.existing, response.message);
+                                button.prop('disabled', false).html(
+                                    '<i class="bi bi-shield-check me-1"></i>Verifikasi'
+                                );
+                            } else {
+                                showErrorAlert(response.message || 'Gagal memverifikasi ke blockchain.');
+                                button.prop('disabled', false).html(
+                                    '<i class="bi bi-shield-check me-1"></i>Verifikasi'
+                                );
+                            }
+                        },
+                        error: function (xhr) {
+                            console.error("Blockchain error:", xhr);
+
+                            let msg = "Gagal memverifikasi ke blockchain.";
+
+                            // Handle duplicate specifically (HTTP 409)
+                            if (xhr.status === 409 && xhr.responseJSON && xhr.responseJSON.status === 'duplicate') {
+                                showDuplicateAlert(xhr.responseJSON.existing || {}, xhr.responseJSON.message);
+                                button.prop('disabled', false).html(
+                                    '<i class="bi bi-shield-check me-1"></i>Verifikasi'
+                                );
+                                return;
+                            }
+
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                msg = xhr.responseJSON.message;
+                            }
+
+                            showErrorAlert(msg);
+
                             button.prop('disabled', false).html(
                                 '<i class="bi bi-shield-check me-1"></i>Verifikasi'
                             );
                         }
-                    },
-                    error: function(xhr) {
-                        console.error("Blockchain error:", xhr);
+                    });
+                });
+            });
 
-                        let msg = "Gagal memverifikasi ke blockchain.";
+            // Delete confirmation with SweetAlert2
+            $(document).on('submit', '.doc-delete-form', function (e) {
+                e.preventDefault();
+                const form = this;
 
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            msg = xhr.responseJSON.message;
-                        }
-
-                        showErrorAlert(msg);
-
-                        button.prop('disabled', false).html(
-                            '<i class="bi bi-shield-check me-1"></i>Verifikasi'
-                        );
+                Swal.fire({
+                    title: 'Hapus dokumen ini?',
+                    text: 'Tindakan tidak dapat dibatalkan.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, hapus',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
                     }
                 });
-
             });
         });
     </script>

@@ -92,8 +92,7 @@
                                 @foreach ($faculties as $faculty)
                                     <div class="list-group-item d-flex justify-content-between align-items-center py-3">
                                         <div class="d-flex align-items-center">
-                                            <div
-                                                class="faculty-icon bg-primary bg-opacity-10 text-primary rounded p-2 me-3">
+                                            <div class="faculty-icon bg-primary bg-opacity-10 text-primary rounded p-2 me-3">
                                                 <i class="bi bi-building"></i>
                                             </div>
                                             <div>
@@ -144,8 +143,7 @@
                                 <h5 class="text-muted">Belum ada program studi</h5>
                                 @if ($faculties->isNotEmpty())
                                     <p class="text-muted mb-3">Mulai dengan menambahkan program studi pertama Anda</p>
-                                    <button class="btn btn-success" data-bs-toggle="modal"
-                                        data-bs-target="#addProgramStudyModal">
+                                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addProgramStudyModal">
                                         <i class="bi bi-plus-lg me-1"></i>Tambah Program Studi
                                     </button>
                                 @else
@@ -161,8 +159,7 @@
                                 @foreach ($programStudies as $program)
                                     <div class="list-group-item d-flex justify-content-between align-items-center py-3">
                                         <div class="d-flex align-items-center">
-                                            <div
-                                                class="program-icon bg-success bg-opacity-10 text-success rounded p-2 me-3">
+                                            <div class="program-icon bg-success bg-opacity-10 text-success rounded p-2 me-3">
                                                 <i class="bi bi-mortarboard"></i>
                                             </div>
                                             <div>
@@ -194,9 +191,25 @@
         </div>
     </div>
 
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-1 font-weight-bold">Keamanan Akun</h5>
+                        <p class="text-muted mb-0">Perbarui kata sandi institusi Anda secara berkala untuk menjaga keamanan.
+                        </p>
+                    </div>
+                    <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                        <i class="bi bi-shield-lock me-1"></i> Ganti Password
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Faculty Modal -->
-    <div class="modal fade" id="addFacultyModal" tabindex="-1" aria-labelledby="addFacultyModalLabel"
-        aria-hidden="true">
+    <div class="modal fade" id="addFacultyModal" tabindex="-1" aria-labelledby="addFacultyModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
                 <form action="{{ route('faculties.store') }}" method="POST" id="addFacultyForm">
@@ -212,8 +225,8 @@
                         <div class="mb-3">
                             <label for="faculty_name" class="form-label fw-semibold">Nama Fakultas <span
                                     class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" id="faculty_name" name="name"
-                                required placeholder="Contoh: Fakultas Teknik">
+                            <input type="text" class="form-control form-control-lg" id="faculty_name" name="name" required
+                                placeholder="Contoh: Fakultas Teknik">
                             <div class="form-text">Masukkan nama fakultas yang lengkap dan jelas</div>
                         </div>
                     </div>
@@ -229,8 +242,7 @@
     </div>
 
     <!-- Edit Faculty Modal -->
-    <div class="modal fade" id="editFacultyModal" tabindex="-1" aria-labelledby="editFacultyModalLabel"
-        aria-hidden="true">
+    <div class="modal fade" id="editFacultyModal" tabindex="-1" aria-labelledby="editFacultyModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
                 <form action="" method="POST" id="editFacultyForm">
@@ -246,8 +258,8 @@
                         <div class="mb-3">
                             <label for="edit_faculty_name" class="form-label fw-semibold">Nama Fakultas <span
                                     class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" id="edit_faculty_name"
-                                name="name" required placeholder="Contoh: Fakultas Teknik">
+                            <input type="text" class="form-control form-control-lg" id="edit_faculty_name" name="name"
+                                required placeholder="Contoh: Fakultas Teknik">
                             <div class="form-text">Perbarui nama fakultas sesuai kebutuhan</div>
                         </div>
                     </div>
@@ -290,8 +302,8 @@
                         <div class="mb-3">
                             <label for="program_study_name" class="form-label fw-semibold">Nama Program Studi <span
                                     class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" id="program_study_name"
-                                name="name" required placeholder="Contoh: Teknik Informatika">
+                            <input type="text" class="form-control form-control-lg" id="program_study_name" name="name"
+                                required placeholder="Contoh: Teknik Informatika">
                             <div class="form-text">Masukkan nama program studi yang lengkap dan jelas</div>
                         </div>
                     </div>
@@ -335,8 +347,8 @@
                         <div class="mb-3">
                             <label for="edit_program_study_name" class="form-label fw-semibold">Nama Program Studi <span
                                     class="text-danger">*</span></label>
-                            <input type="text" class="form-control form-control-lg" id="edit_program_study_name"
-                                name="name" required placeholder="Contoh: Teknik Informatika">
+                            <input type="text" class="form-control form-control-lg" id="edit_program_study_name" name="name"
+                                required placeholder="Contoh: Teknik Informatika">
                             <div class="form-text">Perbarui nama program studi sesuai kebutuhan</div>
                         </div>
                     </div>
@@ -345,6 +357,62 @@
                         <button type="submit" class="btn btn-info px-4 text-white">
                             <i class="bi bi-check-lg me-1"></i>Perbarui
                         </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal ganti password --}}
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <form action="{{ route('institution.update-password') }}" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title"><i class="bi bi-key me-2"></i>Ganti Password</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Password Saat Ini</label>
+                            <div class="input-group">
+                                <input type="password" name="current_password" id="current_password" class="form-control"
+                                    required>
+                                <button class="btn btn-outline-secondary toggle-password" type="button"
+                                    data-target="current_password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Password Baru</label>
+                            <div class="input-group">
+                                <input type="password" name="new_password" id="new_password" class="form-control" required>
+                                <button class="btn btn-outline-secondary toggle-password" type="button"
+                                    data-target="new_password">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Konfirmasi Password Baru</label>
+                            <div class="input-group">
+                                <input type="password" name="new_password_confirmation" id="new_password_confirmation"
+                                    class="form-control" required>
+                                <button class="btn btn-outline-secondary toggle-password" type="button"
+                                    data-target="new_password_confirmation">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-dark px-4">Update Password</button>
                     </div>
                 </form>
             </div>
@@ -444,7 +512,6 @@
 
     @push('scripts')
         <script>
-            // Show success/error messages with SweetAlert
             @if (session('success'))
                 Swal.fire({
                     icon: 'success',
@@ -467,29 +534,29 @@
                 });
             @endif
 
-            // Faculty Functions
-            function editFaculty(id, name) {
-                // Set form action
-                document.getElementById('editFacultyForm').action = `/faculties/${id}`;
+                // Faculty Functions
+                function editFaculty(id, name) {
+                    // Set form action
+                    document.getElementById('editFacultyForm').action = `/faculties/${id}`;
 
-                // Set current name in input
-                document.getElementById('edit_faculty_name').value = name;
+                    // Set current name in input
+                    document.getElementById('edit_faculty_name').value = name;
 
-                // Show modal
-                const editModal = new bootstrap.Modal(document.getElementById('editFacultyModal'));
-                editModal.show();
+                    // Show modal
+                    const editModal = new bootstrap.Modal(document.getElementById('editFacultyModal'));
+                    editModal.show();
 
-                // Focus on input
-                setTimeout(() => {
-                    document.getElementById('edit_faculty_name').focus();
-                }, 500);
-            }
+                    // Focus on input
+                    setTimeout(() => {
+                        document.getElementById('edit_faculty_name').focus();
+                    }, 500);
+                }
 
             function confirmDeleteFaculty(id, name) {
                 Swal.fire({
                     title: 'Hapus Fakultas?',
                     html: `Anda akan menghapus fakultas <strong>"${name}"</strong>.<br><br>
-                      <span class="text-danger">Perhatian: Semua program studi di bawah fakultas ini juga akan terhapus!</span>`,
+                                                              <span class="text-danger">Perhatian: Semua program studi di bawah fakultas ini juga akan terhapus!</span>`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
@@ -546,18 +613,18 @@
             }
 
             // Auto-focus on first input when modals are shown
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
                 const facultyModal = document.getElementById('addFacultyModal');
                 const programModal = document.getElementById('addProgramStudyModal');
 
                 if (facultyModal) {
-                    facultyModal.addEventListener('shown.bs.modal', function() {
+                    facultyModal.addEventListener('shown.bs.modal', function () {
                         document.getElementById('faculty_name').focus();
                     });
                 }
 
                 if (programModal) {
-                    programModal.addEventListener('shown.bs.modal', function() {
+                    programModal.addEventListener('shown.bs.modal', function () {
                         document.getElementById('program_study_name').focus();
                     });
                 }
@@ -567,7 +634,7 @@
                 modals.forEach(modalId => {
                     const modal = document.getElementById(modalId);
                     if (modal) {
-                        modal.addEventListener('hidden.bs.modal', function() {
+                        modal.addEventListener('hidden.bs.modal', function () {
                             const form = this.querySelector('form');
                             if (form && form.id.includes('add')) {
                                 form.reset();
@@ -578,10 +645,10 @@
             });
 
             // Form validation and submission feedback
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
                 const forms = document.querySelectorAll('form');
                 forms.forEach(form => {
-                    form.addEventListener('submit', function(e) {
+                    form.addEventListener('submit', function (e) {
                         const submitBtn = this.querySelector('button[type="submit"]');
                         if (submitBtn) {
                             submitBtn.disabled = true;
@@ -589,6 +656,26 @@
                                 '<i class="bi bi-hourglass-split me-1"></i>Memproses...';
                         }
                     });
+                });
+            });
+
+            document.querySelectorAll('.toggle-password').forEach(button => {
+                button.addEventListener('click', function () {
+                    // Ambil ID target dari atribut data-target
+                    const targetId = this.getAttribute('data-target');
+                    const input = document.getElementById(targetId);
+                    const icon = this.querySelector('i');
+
+                    // Toggle tipe input
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        icon.classList.remove('bi-eye');
+                        icon.classList.add('bi-eye-slash'); // Ganti ikon jadi mata dicoret
+                    } else {
+                        input.type = 'password';
+                        icon.classList.remove('bi-eye-slash');
+                        icon.classList.add('bi-eye'); // Ganti kembali ke ikon mata normal
+                    }
                 });
             });
         </script>

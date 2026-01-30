@@ -75,9 +75,6 @@ class DashboardController extends Controller
             'institution_name' => $user->institution->name ?? '-',
             'total_admins' => $totalAdmins,
             'total_students' => Student::where('institution_id', $institutionId)->count(),
-
-            // Catatan: Jika Anda tetap ingin menjaga key lama untuk tujuan lain, tambahkan saja yang baru.
-            // Namun, jika tujuannya hanya untuk Dashboard, ganti saja namanya.
         ];
     }
 

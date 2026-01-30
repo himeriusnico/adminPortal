@@ -9,9 +9,6 @@ use Illuminate\Support\Facades\Auth;
 
 class FacultyController extends Controller
 {
-    /**
-     * Store a new faculty
-     */
     public function store(Request $request)
     {
         $request->validate([
@@ -36,9 +33,6 @@ class FacultyController extends Controller
         }
     }
 
-    /**
-     * Delete a faculty
-     */
     public function destroy(Faculty $faculty)
     {
         $user = Auth::user();
@@ -63,9 +57,6 @@ class FacultyController extends Controller
         }
     }
 
-    /**
-     * Get program studies by faculty (AJAX)
-     */
     public function getProgramStudies(Faculty $faculty)
     {
         $user = Auth::user();

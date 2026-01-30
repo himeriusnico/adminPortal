@@ -29,10 +29,10 @@ class InstitutionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'  => 'required|string|max:255',
+            'name' => 'required|string|max:255|unique:institutions,name',
             'email' => 'required|email|unique:institutions,email',
             'alamat' => 'nullable|string|max:255',
-            'passphrase' => 'required|string|min:8', // new validation rule
+            'passphrase' => 'required|string|min:8', 
         ]);
 
         DB::beginTransaction();
@@ -50,7 +50,7 @@ class InstitutionController extends Controller
 
                 $ec = EC::createKey('secp256k1', $seed);
                 $privateKeyPem = $ec->toString('PKCS8');
-                $publicKeyPem  = $ec->getPublicKey()->toString('PKCS8');
+                $publicKeyPem = $ec->getPublicKey()->toString('PKCS8');
 
                 // non deterministic
                 // sebenernya pake ini aja udah aman soalnya CSPRNG dan karenaa...
@@ -67,7 +67,7 @@ class InstitutionController extends Controller
             }
 
             try {
-                $iv =  random_bytes(16);
+                $iv = random_bytes(16);
                 $salt = random_bytes(16);
                 $derivedKey = hash_pbkdf2('sha256', $request->passphrase, $salt, 100000, 32, true);
 
@@ -117,7 +117,7 @@ class InstitutionController extends Controller
                     'public_key' => $publicKeyPem,
                     // HARUS DITANYAKAN KE PAK MIFTAH PRIVATE KEY ENAKANYA GIMANA DISIMPANNYA
                     // 'private_key_path' => $filePath,
-                    'ca_cert' => ''
+                    // 'ca_cert' => ''
                 ]);
             } catch (Throwable $e) {
                 Log::error("Save institution failed: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
@@ -155,7 +155,7 @@ class InstitutionController extends Controller
                     'encrypted_private_key' => $encryptedPrivateKey,
                     'iv' => bin2hex($iv),
                     'salt' => bin2hex($salt),
-                    'created_by' => Auth::id(),
+                    // 'created_by' => Auth::id(),
                 ]);
 
                 $institution->update(['encrypted_key_id' => $encryptedKey->id]);
@@ -177,7 +177,7 @@ class InstitutionController extends Controller
                     'email' => $request->email,
                     'password' => Hash::make('password'),
                     'role_id' => $adminRole->id,
-                    'institution_id' => $institution->id 
+                    'institution_id' => $institution->id
                 ]);
             } catch (Throwable $e) {
                 Log::error("Create admin user failed: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
@@ -252,5 +252,25 @@ class InstitutionController extends Controller
             ->get();
 
         return view('institutions.settings', compact('faculties', 'programStudies'));
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|min:8|confirmed',
+        ]);
+
+        $user = Auth::user();
+
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->with('error', 'Password saat ini tidak sesuai.');
+        }
+
+        $user->update([
+            'password' => Hash::make($request->new_password)
+        ]);
+
+        return back()->with('success', 'Password berhasil diperbarui.');
     }
 }

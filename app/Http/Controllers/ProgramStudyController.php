@@ -9,9 +9,6 @@ use Illuminate\Support\Facades\Auth;
 
 class ProgramStudyController extends Controller
 {
-  /**
-   * Store a new program study
-   */
   public function store(Request $request)
   {
     $request->validate([
@@ -46,9 +43,6 @@ class ProgramStudyController extends Controller
     }
   }
 
-  /**
-   * Delete a program study
-   */
   public function destroy(ProgramStudy $programStudy)
   {
     $user = Auth::user();

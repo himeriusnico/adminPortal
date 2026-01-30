@@ -88,9 +88,9 @@
                                                 {{ $document->filename }}
                                             </td>
                                             <td>
-                                                @if ($document->document_type === 'dokumen_ijazah')
+                                                @if ($document->document_type_id == 1)
                                                     <span class="badge bg-primary">Ijazah</span>
-                                                @elseif($document->document_type === 'transkrip')
+                                                @elseif($document->document_type_id == 2)
                                                     <span class="badge bg-info">Transkrip</span>
                                                 @else
                                                     <span class="badge bg-success">SKPI</span>

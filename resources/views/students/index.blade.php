@@ -84,11 +84,9 @@
                 <i class="bi bi-list-ul me-2"></i>Daftar Mahasiswa
             </h5>
             <div class="d-flex">
-                <input type="text" id="searchInput" class="form-control form-control-sm me-2"
-                    placeholder="Cari mahasiswa..." style="width: 250px;">
-                <button class="btn btn-sm btn-outline-secondary" onclick="exportData()">
+                {{-- <button class="btn btn-sm btn-outline-secondary" onclick="exportData()">
                     <i class="bi bi-download me-1"></i>Export
-                </button>
+                </button> --}}
             </div>
         </div>
         <div class="card-body">
@@ -110,7 +108,8 @@
                     <tbody>
                         @forelse($students as $student)
                             <tr>
-                                {{-- <td>{{ $loop->iteration + ($students->currentPage() - 1) * $students->perPage() }}</td> --}}
+                                {{-- <td>{{ $loop->iteration + ($students->currentPage() - 1) * $students->perPage() }}</td>
+                                --}}
                                 <td>{{ $loop->iteration }}</td>
                                 <td>
                                     <div class="d-flex align-items-center">
@@ -168,8 +167,7 @@
                                     <i class="bi bi-people display-1 text-muted d-block mb-3"></i>
                                     <h5 class="text-muted">Belum ada data mahasiswa</h5>
                                     <p class="text-muted">Mulai dengan menambahkan mahasiswa baru</p>
-                                    <button class="btn btn-primary" data-bs-toggle="modal"
-                                        data-bs-target="#createStudentModal">
+                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createStudentModal">
                                         <i class="bi bi-person-plus me-2"></i>Tambah Mahasiswa Pertama
                                     </button>
                                 </td>
@@ -181,15 +179,15 @@
 
             <!-- Pagination -->
             {{-- @if ($students->hasPages())
-                <div class="d-flex justify-content-between align-items-center mt-3">
-                    <div class="text-muted">
-                        Menampilkan {{ $students->firstItem() }} - {{ $students->lastItem() }} dari
-                        {{ $students->total() }} mahasiswa
-                    </div>
-                    <nav>
-                        {{ $students->links() }}
-                    </nav>
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted">
+                    Menampilkan {{ $students->firstItem() }} - {{ $students->lastItem() }} dari
+                    {{ $students->total() }} mahasiswa
                 </div>
+                <nav>
+                    {{ $students->links() }}
+                </nav>
+            </div>
             @endif --}}
         </div>
     </div>
@@ -222,8 +220,8 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="entry_year" class="form-label">Tahun Masuk *</label>
-                                <input type="number" class="form-control" id="entry_year" name="entry_year"
-                                    min="2000" max="2030" required>
+                                <input type="number" class="form-control" id="entry_year" name="entry_year" min="2000"
+                                    max="2030" required>
                             </div>
                         </div>
                         <div class="row">
@@ -279,7 +277,7 @@
 
     @push('scripts')
         <script>
-            document.getElementById('status').addEventListener('change', function() {
+            document.getElementById('status').addEventListener('change', function () {
                 const graduationDateContainer = document.getElementById('graduationDateContainer');
                 graduationDateContainer.style.display = this.value === 'graduated' ? 'block' : 'none';
 
@@ -290,18 +288,9 @@
                 }
             });
 
-            // Simple search functionality
-            document.getElementById('searchInput').addEventListener('input', function(e) {
-                const searchTerm = e.target.value.toLowerCase();
-                const rows = document.querySelectorAll('#studentsTable tbody tr');
+            // DataTables provides built-in search; custom input removed
 
-                rows.forEach(row => {
-                    const text = row.textContent.toLowerCase();
-                    row.style.display = text.includes(searchTerm) ? '' : 'none';
-                });
-            });
-
-            document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('DOMContentLoaded', function () {
                 // Only initialize DataTables if there's data
                 @if ($students->count() > 0)
                     const table = new DataTable('#studentsTable', {
@@ -324,9 +313,9 @@
                         }]
                     });
                 @endif
-            });
+                                                    });
 
-            document.getElementById('faculty').addEventListener('change', function() {
+            document.getElementById('faculty').addEventListener('change', function () {
                 const facultyId = this.value;
                 const programStudySelect = document.getElementById('program_study');
 
@@ -440,13 +429,13 @@
                 });
 
                 fetch("{{ route('students.store') }}", {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json'
-                        },
-                        body: formData
-                    })
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {

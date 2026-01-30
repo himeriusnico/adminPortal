@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\BlockchainController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\InstitutionController;
@@ -12,7 +13,6 @@ use App\Models\Faculty;
 use App\Models\ProgramStudy;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -62,6 +62,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/settings', function () {
         return view('profile'); // Asumsi 'settings' mengarah ke view 'profile'
     })->name('settings');
+
 });
 
 
@@ -109,12 +110,14 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // Unggah Dokumen (sesuai sidebar 'documents*')
     Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
     Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
+    Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
     Route::get('/documents/{document}/view', [DocumentController::class, 'viewDocument'])->name('documents.view');
 
     Route::post('/documents/{document}/send-blockchain', [DocumentController::class, 'sendToBlockchain']);
     Route::get('/documents/{id}/blockchain-data', [DocumentController::class, 'getBlockchainData'])->name('documents.blockchain');
 
-
+    Route::get('/blockchain', [BlockchainController::class, 'index'])
+        ->name('blockchain.index');
 
     // Faculty Management Routes
     Route::post('/faculties', [FacultyController::class, 'store'])->name('faculties.store');
@@ -125,6 +128,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     // Program Study Management Routes
     Route::post('/program-studies', [ProgramStudyController::class, 'store'])->name('program-studies.store');
     Route::delete('/program-studies/{programStudy}', [ProgramStudyController::class, 'destroy'])->name('program-studies.destroy');
+
+    Route::put('/institution/update-password', [InstitutionController::class, 'updatePassword'])
+     ->name('institution.update-password');
 });
 
 // == 5. RUTE STUDENT ==
@@ -146,6 +152,7 @@ Route::middleware(['auth', 'role:admin,student'])->group(function () {
 
     // Rute 'Dokumen Saya' (untuk student) / 'Detail Mahasiswa' (untuk admin)
     Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
+    Route::get('/documents/{document}/view', [DocumentController::class, 'viewDocument'])->name('documents.view');
 });
 // Catatan: Route '/documents' dan '/profile' lama Anda 
 // yang ada di grup 'auth' umum telah dihapus/dipindahkan 

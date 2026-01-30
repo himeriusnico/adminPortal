@@ -4,9 +4,10 @@
 
 @section('content')
     <div class="dashboard-container">
-        <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-4 pb-3 mb-4 border-bottom">
+        <div
+            class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-4 pb-3 mb-4 border-bottom">
             <h1 class="h2">Dashboard</h1>
-            <div class="btn-toolbar mb-2 mb-md-0">
+            {{-- <div class="btn-toolbar mb-2 mb-md-0">
                 <div class="btn-group me-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.location.reload()">
                         <i class="bi bi-arrow-clockwise"></i> Refresh
@@ -16,7 +17,7 @@
                     </button>
 
                 </div>
-            </div>
+            </div> --}}
         </div>
 
         <div class="alert alert-info mb-5">
@@ -260,7 +261,7 @@
 
                                             <th>Tanggal Upload</th>
                                             <th>Status</th>
-                                            <th>TX ID Blockchain</th>
+                                            {{-- <th>TX ID Blockchain</th> --}}
                                             <th>Aksi</th>
                                         </tr>
                                     </thead>
@@ -272,9 +273,9 @@
                                                     {{ $document->filename }}
                                                 </td>
                                                 <td>
-                                                    @if ($document->document_type === 'dokumen_ijazah')
+                                                    @if ($document->document_type_id == 1)
                                                         <span class="badge bg-primary">Ijazah</span>
-                                                    @elseif($document->document_type === 'transkrip')
+                                                    @elseif($document->document_type_id == 2)
                                                         <span class="badge bg-info">Transkrip</span>
                                                     @else
                                                         <span class="badge bg-success">SKPI</span>
@@ -300,21 +301,24 @@
                                                         <span class="badge bg-warning">Menunggu</span>
                                                     @endif
                                                 </td>
+                                                {{-- <td>
+                                                    @if ($document->tx_id)
+                                                    <code title="{{ $document->tx_id }}">
+                                                                                                                        {{ Str::limit($document->tx_id, 10) }}
+                                                                                                                    </code>
+                                                    @else
+                                                    <code>-</code>
+                                                    @endif
+                                                </td> --}}
                                                 <td>
                                                     @if ($document->tx_id)
-                                                        <code title="{{ $document->tx_id }}">
-                                                            {{ Str::limit($document->tx_id, 10) }}
-                                                        </code>
+                                                        <button class="btn btn-outline-info btn-sm"
+                                                            onclick="showTxId('{{ $document->tx_id }}')" title="Lihat Transaction ID">
+                                                            <i class="bi bi-link-45deg"></i> TX ID
+                                                        </button>
                                                     @else
-                                                        <code>-</code>
+                                                        <span class="text-muted">-</span>
                                                     @endif
-                                                </td>
-                                                <td>
-                                                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                                                        data-bs-target="#qrModal{{ $document->id }}"
-                                                        title="Lihat QR Code">
-                                                        <i class="bi bi-qr-code"></i> QR
-                                                    </button>
                                                 </td>
                                             </tr>
                                         @endforeach
@@ -325,35 +329,6 @@
                     </div>
                 </div>
             </div>
-
-            @foreach ($recent_documents as $document)
-                <div class="modal fade" id="qrModal{{ $document->id }}" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">QR Code - {{ $document->filename }}</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body text-center">
-                                <div class="bg-light p-4 mb-3 rounded">
-                                    <i class="bi bi-qr-code display-1 text-muted"></i>
-                                    <p class="text-muted mt-2">QR Code akan ditampilkan di sini</p>
-                                </div>
-                                <small class="text-muted">Fitur QR Code akan diimplementasikan kemudian</small>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-success" disabled>
-                                    <i class="bi bi-download"></i> Unduh QR
-                                </button>
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                    Tutup
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            @endforeach
         @else
             <div class="row">
                 <div class="col-12">
@@ -377,11 +352,14 @@
         $role = Auth::user()->role->name;
 
         if ($role === 'super_admin') {
-            $dateColumnIndex = 4; // [Nama, Jenis, Mhs, Pengunggah, TANGGAL]
-            $actionColumnIndex = 7; // [..., ..., ..., ..., ..., Status, TX ID, AKSI]
-        } elseif ($role === 'admin' || $role === 'student') {
-            $dateColumnIndex = 3; // [Nama, Jenis, Mhs/Pengunggah, TANGGAL]
-            $actionColumnIndex = 6; // [..., ..., ..., ..., Status, TX ID, AKSI]
+            $dateColumnIndex = 4;   // Tanggal
+            $actionColumnIndex = 6; // Aksi
+        } elseif ($role === 'admin') {
+            $dateColumnIndex = 3;
+            $actionColumnIndex = 5;
+        } elseif ($role === 'student') {
+            $dateColumnIndex = 3;
+            $actionColumnIndex = 5;
         }
     @endphp
 
@@ -426,20 +404,20 @@
             //     });
             // });
 
-            $(document).ready(function() {
+            $(document).ready(function () {
                 initDataTable('#documentsTable', {
                     order: [
                         [{{ $dateColumnIndex }}, 'desc']
                     ], // Dynamic column sorting
                     columnDefs: [{
-                            targets: [{{ $actionColumnIndex }}], // Action column
-                            orderable: false,
-                            searchable: false
-                        },
-                        {
-                            targets: '_all',
-                            className: 'align-middle'
-                        }
+                        targets: [{{ $actionColumnIndex }}], // Action column
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        targets: '_all',
+                        className: 'align-middle'
+                    }
                     ],
                     pageLength: 10,
                     lengthMenu: [
@@ -449,9 +427,9 @@
                 });
             })
 
-            document.addEventListener("DOMContentLoaded", function() {
+            document.addEventListener("DOMContentLoaded", function () {
                 // SweetAlert2 Test Button
-                document.getElementById("swalTestBtn").addEventListener("click", function() {
+                document.getElementById("swalTestBtn").addEventListener("click", function () {
                     Swal.fire({
                         title: "SweetAlert2 Berhasil!",
                         text: "Jika kamu melihat ini, berarti integrasi SweetAlert2 sudah bekerja 🚀",
@@ -461,6 +439,15 @@
                     });
                 });
             });
+
+            function showTxId(txId) {
+                Swal.fire({
+                    title: 'Transaction ID Blockchain',
+                    html: `<code style="font-size:14px; word-break:break-all;">${txId}</code>`,
+                    icon: 'info',
+                    confirmButtonText: 'Tutup'
+                });
+            }
         </script>
     @endpush
 

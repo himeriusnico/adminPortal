@@ -13,11 +13,11 @@
                     <h6 class="mb-0 fw-bold text-truncate" style="max-width: 150px;">{{ Auth::user()->name }}</h6>
                     <small class="text-muted">
                         @if (Auth::user()->role->name === 'super_admin')
-                            <i class="bi bi-shield-check text-warning me-1"></i>Super Admin
+                        <i class="bi bi-shield-check text-warning me-1"></i>Super Admin
                         @elseif(Auth::user()->role->name === 'admin')
-                            <i class="bi bi-building text-info me-1"></i>Administrator
+                        <i class="bi bi-building text-info me-1"></i>Administrator
                         @else
-                            <i class="bi bi-mortarboard text-success me-1"></i>Mahasiswa
+                        <i class="bi bi-mortarboard text-success me-1"></i>Mahasiswa
                         @endif
                     </small>
                 </div>
@@ -54,17 +54,17 @@
                         @endif
                     </a>
                 </li>
-                <li class="nav-item">
+                {{-- <li class="nav-item">
                     <a class="nav-link sidebar-link {{ request()->is('users*') ? 'active' : '' }}" href="#">
                         <div class="sidebar-icon">
                             <i class="bi bi-people"></i>
                         </div>
                         <span class="sidebar-text">Kelola Pengguna</span>
                         @if (request()->is('users*'))
-                            <span class="sidebar-active-indicator"></span>
+                        <span class="sidebar-active-indicator"></span>
                         @endif
                     </a>
-                </li>
+                </li> --}}
             @endif
 
             <!-- Admin Menu -->
@@ -122,31 +122,28 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link sidebar-link {{ request()->is('verification*') ? 'active' : '' }}"
-                        href="#">
+                    <a class="nav-link sidebar-link {{ request()->fullUrlIs('http://repo-dokumen-publik.test*') ? 'active' : '' }}"
+                        href="http://repo-dokumen-publik.test/">
                         <div class="sidebar-icon">
                             <i class="bi bi-patch-check"></i>
                         </div>
                         <span class="sidebar-text">Verifikasi Dokumen</span>
-                        @if (request()->is('verification*'))
-                            <span class="sidebar-active-indicator"></span>
-                        @endif
                     </a>
                 </li>
             @endif
 
             <!-- Common Menu for All Roles -->
-            <li class="nav-item">
+            {{-- <li class="nav-item">
                 <a class="nav-link sidebar-link {{ request()->is('settings*') ? 'active' : '' }}" href="#">
                     <div class="sidebar-icon">
                         <i class="bi bi-sliders"></i>
                     </div>
                     <span class="sidebar-text">Pengaturan</span>
                     @if (request()->is('settings*'))
-                        <span class="sidebar-active-indicator"></span>
+                    <span class="sidebar-active-indicator"></span>
                     @endif
                 </a>
-            </li>
+            </li> --}}
         </ul>
 
         <!-- Logout Section -->
@@ -339,15 +336,15 @@
         }
 
         // Add hover effects with JavaScript for better performance
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const sidebarLinks = document.querySelectorAll('.sidebar-link');
 
             sidebarLinks.forEach(link => {
-                link.addEventListener('mouseenter', function() {
+                link.addEventListener('mouseenter', function () {
                     this.style.transform = 'translateX(5px)';
                 });
 
-                link.addEventListener('mouseleave', function() {
+                link.addEventListener('mouseleave', function () {
                     if (!this.classList.contains('active')) {
                         this.style.transform = 'translateX(0)';
                     }

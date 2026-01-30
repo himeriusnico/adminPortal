@@ -9,43 +9,25 @@ use App\Models\ProgramStudy;
 use App\Models\Student;
 use Illuminate\Http\Request;
 use App\Models\User;
-use App\Models\Role; // <-- TAMBAHKAN INI
+use App\Models\Role; 
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth; // <-- TAMBAHKAN INI
+use Illuminate\Support\Facades\Auth; 
 
 class StudentController extends Controller
 {
-    /**
-     * HAPUS FUNGSI __construct()
-     *
-     * Kita HAPUS seluruh fungsi __construct() dari sini.
-     * Kenapa? Karena kita sudah melindungi route ini di web.php
-     * menggunakan middleware('role:admin').
-     * Otorisasi di __construct() ini REDUNDANT (berlebihan)
-     * dan menggunakan logika lama (user_type) yang menyebabkan error 403.
-     */
-
-    /**
-     * Menampilkan daftar semua data mahasiswa.
-     */
     public function index()
     {
         $user = Auth::user();
 
-        // Base query
         $query = Student::with(['user', 'institution'])->orderBy('created_at', 'desc');
 
         $institution_id = $user->institution_id;
 
-        // LOGIKA BARU:
-        // Jika user adalah 'admin' (bukan 'super_admin'),
-        // filter mahasiswa berdasarkan institusi milik admin tersebut.
         if ($user->role->name === 'admin') {
-            // Ambil institution_id langsung dari user (bukan dari model Pegawai)
             if ($institution_id) {
                 $query->where('institution_id', $institution_id);
             } else {
-                // Jika admin tidak punya institusi, jangan tampilkan apa-apa
+                // Jika admin tidak punya institusi, jangan tampilkan apa- apa
                 $query->whereRaw('1 = 0'); // Trik untuk mengembalikan 0 hasil
             }
         }
@@ -79,22 +61,13 @@ class StudentController extends Controller
         ));
     }
 
-
-    /**
-     * Menampilkan form untuk membuat mahasiswa baru.
-     */
     public function create()
     {
-        // (Tidak ada perubahan, ini hanya menampilkan view)
         return view('students.create');
     }
 
-    /**
-     * Menyimpan data mahasiswa baru ke database.
-     */
     public function store(Request $request)
     {
-        // Validasi (Tidak ada perubahan)
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
@@ -107,7 +80,6 @@ class StudentController extends Controller
             'graduation_date' => 'nullable|date|after_or_equal:entry_year',
         ]);
 
-        // LOGIKA BARU:
         $adminUser = Auth::user(); // Ini adalah user 'admin' yang sedang login
         $institution_id = $adminUser->institution_id;
 
@@ -117,8 +89,8 @@ class StudentController extends Controller
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => Hash::make('11111111'), // Password default sementara
-                'role_id' => $studentRole->id, // <-- Gunakan role_id
-                'institution_id' => $institution_id // <-- Tetapkan institusi saat user dibuat
+                'role_id' => $studentRole->id, 
+                'institution_id' => $institution_id 
             ]);
 
             $student = Student::create([
