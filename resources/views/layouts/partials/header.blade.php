@@ -1,4 +1,4 @@
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
     <div class="container-fluid">
         <a class="navbar-brand" href="{{ url('/') }}">
             <i class="bi bi-mortarboard-fill me-2"></i>
@@ -28,12 +28,12 @@
                             {{ Auth::user()->name }}
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                            <li><a class="dropdown-item" href="{{ url('/dashboard') }}">
+                            {{-- <li><a class="dropdown-item" href="{{ url('/dashboard') }}">
                                     <i class="bi bi-speedometer2 me-2"></i>Dashboard
                                 </a></li>
                             <li>
                                 <hr class="dropdown-divider">
-                            </li>
+                            </li> --}}
                             <li>
                                 <form method="POST" action="{{ route('logout') }}" id="logout-form">
                                     @csrf

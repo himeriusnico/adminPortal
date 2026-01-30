@@ -8,16 +8,18 @@ use Illuminate\Database\Eloquent\Model;
 class Student extends Model
 {
     use HasFactory;
-    
+
     // Sesuaikan fillable dengan kolom yang relevan
     protected $fillable = [
-        'user_id', 
-        'institution_id', 
-        'student_id', 
-        'program_study', 
-        'faculty', 
-        'entry_year', 
-        'status'
+        'user_id',
+        'institution_id',
+        'student_id',
+        'faculty_id',          
+        'program_study_id',    
+        'phone',
+        'entry_year',
+        'status',
+        'graduation_date'      
     ];
 
 
@@ -34,5 +36,15 @@ class Student extends Model
     public function documents()
     {
         return $this->hasMany(Document::class);
+    }
+
+    public function programStudy()
+    {
+        return $this->belongsTo(ProgramStudy::class);
+    }
+
+    public function faculty()
+    {
+        return $this->belongsTo(Faculty::class);
     }
 }

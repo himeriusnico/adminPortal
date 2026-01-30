@@ -21,7 +21,8 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                return redirect(RouteServiceProvider::HOME);
+                // Ganti menjadi route('dashboard')
+                return redirect()->route('dashboard'); // <-- BARIS YANG DIUBAH
             }
         }
 

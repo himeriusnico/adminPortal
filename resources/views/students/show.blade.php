@@ -11,7 +11,7 @@
                 </ol>
             </nav>
         </div>
-        <div>
+        {{-- <div>
             <a href="{{ route('students.index') }}" class="btn btn-secondary me-2">
                 <i class="bi bi-arrow-left me-2"></i>Kembali
             </a>
@@ -21,7 +21,7 @@
             <button class="btn btn-danger" onclick="deleteStudent({{ $student->id }})">
                 <i class="bi bi-trash me-2"></i>Hapus
             </button>
-        </div>
+        </div> --}}
     </div>
 
     <div class="row">
@@ -48,8 +48,8 @@
 
                     <div class="text-start">
                         <p><strong>NIM:</strong> <code>{{ $student->student_id }}</code></p>
-                        <p><strong>Program Studi:</strong> {{ $student->program_study }}</p>
-                        <p><strong>Fakultas:</strong> {{ $student->faculty }}</p>
+                        <p><strong>Program Studi:</strong> {{ $student->programStudy->name ?? 'N/A' }}</p>
+                        <p><strong>Fakultas:</strong> {{ $student->faculty->name ?? 'N/A' }}</p>
                         <p><strong>Tahun Masuk:</strong> {{ $student->entry_year }}</p>
                         @if ($student->phone)
                             <p><strong>Telepon:</strong> {{ $student->phone }}</p>
@@ -88,9 +88,9 @@
                                                 {{ $document->filename }}
                                             </td>
                                             <td>
-                                                @if ($document->document_type === 'dokumen_ijazah')
+                                                @if ($document->document_type_id == 1)
                                                     <span class="badge bg-primary">Ijazah</span>
-                                                @elseif($document->document_type === 'transkrip')
+                                                @elseif($document->document_type_id == 2)
                                                     <span class="badge bg-info">Transkrip</span>
                                                 @else
                                                     <span class="badge bg-success">SKPI</span>
@@ -105,7 +105,12 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                <button class="btn btn-sm btn-outline-primary">
+                                                <a href="{{ route('documents.view', $document->id) }}" target="_blank"
+                                                    class="btn btn-sm btn-outline-primary" title="Lihat dokumen">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                {{-- Download e belum ya --}}
+                                                <button class="btn btn-sm btn-outline-primary" title="Unduh">
                                                     <i class="bi bi-download"></i>
                                                 </button>
                                             </td>

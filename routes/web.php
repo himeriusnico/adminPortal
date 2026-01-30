@@ -1,52 +1,159 @@
 <?php
 
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\BlockchainController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\InstitutionController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\FacultyController;
+use App\Http\Controllers\ProgramStudyController;
+use App\Models\Faculty;
+use App\Models\ProgramStudy;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Di sini route di-adjust untuk mencerminkan 3 role:
+| 1. super_admin -> Kelola Institusi, Kelola Pengguna
+| 2. admin       -> Kelola Mahasiswa, Kelola Dokumen
+| 3. student     -> Lihat Dokumen Saya
+|
+*/
 
-// Route untuk tamu
+// == 1. RUTE PUBLIK (TAMU) ==
 Route::get('/', function () {
     return view('welcome');
 })->name('home');
-
-// Autentikasi
-Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
-Route::post('/register', [RegisteredUserController::class, 'store']);
-Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
-Route::post('/login', [AuthenticatedSessionController::class, 'store']);
-
-// Route yang perlu login
-Route::middleware('auth')->group(function () {
-    // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    Route::resource('students', StudentController::class);
-
-    // Logout
-    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
-
-    // Route berdasarkan role (akan dihandle di controller nanti)
-    Route::get('/institutions', function () {
-        // Logic untuk cek role ada di controller
-        return view('admin.institutions');
-    })->name('institutions');
-
-    Route::get('/students', function () {
-        return view('admin.students');
-    })->name('students');
-
-    Route::get('/documents', function () {
-        return view('documents');
-    })->name('documents');
-
-    Route::get('/profile', function () {
-        return view('profile');
-    })->name('profile');
-});
 
 // Verifikasi publik
 Route::get('/verify', function () {
     return view('public.verify');
 })->name('public.verify');
+
+
+// Grup Rute Tamu (Guest)
+// Hanya bisa diakses jika BELUM login
+Route::middleware('guest')->group(function () {
+
+    // Autentikasi
+    Route::get('/register', [RegisterController::class, 'create'])->name('register');
+    Route::post('/register', [RegisterController::class, 'store']);
+    Route::get('/login', [LoginController::class, 'create'])->name('login');
+    Route::post('/login', [LoginController::class, 'store']);
+});
+
+
+// == 2. RUTE TERAUTENTIKASI (SEMUA ROLE) ==
+// (Semua pengguna yang login bisa akses ini)
+Route::middleware('auth')->group(function () {
+
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Logout
+    Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+
+    // Pengaturan Umum (sesuai sidebar 'settings*')
+    Route::get('/settings', function () {
+        return view('profile'); // Asumsi 'settings' mengarah ke view 'profile'
+    })->name('settings');
+
+});
+
+
+//Route spesifik untuk admin mengakses pengaturan institusi soale 
+// institutions.show (dengan wildcard) berada di urutan file di atas institutions.settings (yang spesifik), rute Super Admin menangkapnya.
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/institutions/settings', [InstitutionController::class, 'setting'])->name('institutions.settings');
+});
+
+// == 3. RUTE SUPER ADMIN ==
+// (Hanya 'super_admin' yang bisa akses)
+Route::middleware(['auth', 'role:super_admin'])->group(function () {
+
+    // Institutions Routes (sesuai file asli Anda)
+    Route::get('/institutions', [InstitutionController::class, 'index'])->name('institutions.index');
+    Route::post('/institutions', [InstitutionController::class, 'store'])->name('institutions.store');
+    Route::put('/institutions/{institution}', [InstitutionController::class, 'update'])->name('institutions.update');
+    Route::delete('/institutions/{institution}', [InstitutionController::class, 'destroy'])->name('institutions.destroy');
+    // Keep wildcard routes LAST to prevent conflicts with specific routes
+    Route::get('/institutions/{institution}', [InstitutionController::class, 'show'])->name('institutions.show');
+    // CATATAN: 5 baris di atas bisa disingkat menjadi:
+    // Route::resource('institutions', InstitutionController::class)->except(['create', 'edit']);
+
+    // Kelola Pengguna (sesuai sidebar 'users*')
+    Route::get('/users', function () {
+        // Arahkan ke view atau controller Anda untuk kelola user
+        return view('users.index'); // Placeholder
+    })->name('users.index');
+});
+
+
+// == 4. RUTE ADMIN ==
+// (Hanya 'admin' yang bisa akses)
+Route::middleware(['auth', 'role:admin'])->group(function () {
+
+    // Students Routes (sesuai file asli Anda)
+    // PASTIKAN SEMUA ROUTE INI ADA DI DALAM GRUP INI
+    Route::get('/students', [StudentController::class, 'index'])->name('students.index');
+    Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
+    Route::post('/students', [StudentController::class, 'store'])->name('students.store');
+    Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
+    Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
+    Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
+
+    // Unggah Dokumen (sesuai sidebar 'documents*')
+    Route::get('/documents', [DocumentController::class, 'index'])->name('documents.index');
+    Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
+    Route::delete('/documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
+    Route::get('/documents/{document}/view', [DocumentController::class, 'viewDocument'])->name('documents.view');
+
+    Route::post('/documents/{document}/send-blockchain', [DocumentController::class, 'sendToBlockchain']);
+    Route::get('/documents/{id}/blockchain-data', [DocumentController::class, 'getBlockchainData'])->name('documents.blockchain');
+
+    Route::get('/blockchain', [BlockchainController::class, 'index'])
+        ->name('blockchain.index');
+
+    // Faculty Management Routes
+    Route::post('/faculties', [FacultyController::class, 'store'])->name('faculties.store');
+    Route::delete('/faculties/{faculty}', [FacultyController::class, 'destroy'])->name('faculties.destroy');
+    Route::get('/faculties/{faculty}/program-studies', [FacultyController::class, 'getProgramStudies'])
+        ->name('faculties.programs');
+
+    // Program Study Management Routes
+    Route::post('/program-studies', [ProgramStudyController::class, 'store'])->name('program-studies.store');
+    Route::delete('/program-studies/{programStudy}', [ProgramStudyController::class, 'destroy'])->name('program-studies.destroy');
+
+    Route::put('/institution/update-password', [InstitutionController::class, 'updatePassword'])
+     ->name('institution.update-password');
+});
+
+// == 5. RUTE STUDENT ==
+// (Hanya 'student' yang bisa akses)
+Route::middleware(['auth', 'role:student'])->group(function () {
+
+    // Dokumen Saya (sesuai sidebar 'my-documents*')
+    Route::get('/my-documents', function () {
+        return view('student.my-documents'); // Asumsi view
+    })->name('my.documents');
+
+    // Verifikasi Dokumen (sesUai sidebar 'verification*')
+    Route::get('/verification', function () {
+        return view('student.verification'); // Asumsi view
+    })->name('verification');
+});
+
+Route::middleware(['auth', 'role:admin,student'])->group(function () {
+
+    // Rute 'Dokumen Saya' (untuk student) / 'Detail Mahasiswa' (untuk admin)
+    Route::get('/students/{student}', [StudentController::class, 'show'])->name('students.show');
+    Route::get('/documents/{document}/view', [DocumentController::class, 'viewDocument'])->name('documents.view');
+});
+// Catatan: Route '/documents' dan '/profile' lama Anda 
+// yang ada di grup 'auth' umum telah dihapus/dipindahkan 
+// ke dalam grup role masing-masing ('settings' dan 'documents.index').

@@ -8,9 +8,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:wght@200..700&display=swap" rel="stylesheet">
 
     <!-- Bootstrap CSS Manual -->
     <link href="{{ asset('vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
@@ -18,8 +16,16 @@
     <!-- Bootstrap Icons CDN -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <!-- DataTables CSS Basic -->
-    <link href="{{ asset('vendor/datatables/css/dataTables.bootstrap5.min.css') }}" rel="stylesheet">
+    <link href="{{ asset('vendor/datatables/css/dataTables.min.css') }}" rel="stylesheet">
+
+    {{-- <link href="{{ asset('css/datatables-custom.css') }}" rel="stylesheet"> --}}
+
+    <link rel="stylesheet" href="{{ asset('css/auth.css') }}">
+
+    <link href="{{ asset('css/stats-card.css') }}" rel="stylesheet">
 
     <!-- Custom CSS untuk dashboard -->
     @if (request()->is('dashboard') || request()->is('dashboard/*'))
@@ -82,24 +88,34 @@
 
 <body>
     <!-- Header -->
-    @include('layouts.partials.header')
+    {{-- @include('layouts.partials.header') --}}
 
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar (hanya tampil jika user sudah login) -->
-            @auth
+    @if (!request()->is('login') && !request()->is('register') && !request()->is('/'))
+        @include('layouts.partials.header')
+    @endif
+
+    @auth
+        <!-- Show sidebar layout only for authenticated users -->
+        <div class="container-fluid">
+            <div class="row">
+                {{-- @php
+                    // Define $role variable for sidebar
+                    $role = Auth::user()->role->name ?? 'student';
+                @endphp --}}
                 @include('layouts.partials.sidebar')
-            @endauth
-
-            <!-- Main Content -->
-            <main class="@auth col-md-9 ms-sm-auto col-lg-10 px-md-4 @else col-12 @endauth main-content">
-                <div class="content-container">
-                    @yield('content')
-                </div>
-            </main>
+                <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                    <div class="content-container">
+                        @yield('content')
+                    </div>
+                </main>
+            </div>
         </div>
-    </div>
-
+    @else
+        <!-- Full-width layout for auth pages (login/register) -->
+        <main style="padding: 0; margin: 0;">
+            @yield('content')
+        </main>
+    @endauth
     <!-- Footer -->
     @include('layouts.partials.footer')
 
@@ -110,7 +126,11 @@
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 
     <!-- DataTables JS Basic -->
-    <script src="{{ asset('vendor/datatables/js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ asset('vendor/datatables/js/dataTables.js') }}"></script>
+    <script src="{{ asset('vendor/datatables/js/dataTables.min.js') }}"></script>
+
+    <!-- Global DataTables Configuration -->
+    <script src="{{ asset('js/datatables-config.js') }}"></script>
 
     <!-- Custom JavaScript -->
     <script>

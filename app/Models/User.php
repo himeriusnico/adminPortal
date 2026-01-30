@@ -4,31 +4,42 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
         'email',
         'password',
-        'user_type',
+        'role_id',
+        'institution_id',
+        // 'user_type',
     ];
 
-    protected $hidden = [
-        'password',
-    ];
+    protected $hidden = ['password', 'remember_token'];
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function institution()
+    {
+        return $this->belongsTo(Institution::class);
+    }
+
 
     public function student()
     {
         return $this->hasOne(Student::class);
     }
 
-    public function pegawai()
+    public function documents()
     {
-        // Perhatikan foreign key 'users_id' sesuai skema Anda
-        return $this->hasOne(Pegawai::class, 'users_id');
+        return $this->hasManyThrough(Document::class, Student::class, 'user_id', 'student_id', 'id', 'id');
     }
 }
