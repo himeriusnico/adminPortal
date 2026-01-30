@@ -284,11 +284,14 @@
 
             // ✅ SUBMIT VIA AJAX - Handle JSON Response
             $('#confirmUploadBtn').on('click', function () {
-                const passphrase = $('#passphrase_input').val();
+                const inputPassphrase = $('#passphrase_input').val();
+                const storedPassphrase = $('#hiddenPassphrase').val();
+                const passphrase = inputPassphrase && inputPassphrase.length > 0 ? inputPassphrase : storedPassphrase;
                 const form = $('#documentUploadForm');
 
-                console.log('Passphrase modal value:', passphrase);
-                console.log('Passphrase length:', passphrase.length);
+                console.log('Passphrase modal value (input):', inputPassphrase);
+                console.log('Passphrase fallback (hidden):', storedPassphrase);
+                console.log('Using passphrase length:', (passphrase || '').length);
 
                 // Passphrase must be at least 8 chars (mirror backend)
                 if (!passphrase || passphrase.length < 8) {
@@ -317,6 +320,7 @@
                     return;
                 }
 
+                // Persist passphrase in hidden field so re-submits (e.g., after 409 duplicate) still work
                 $('#hiddenPassphrase').val(passphrase);
                 console.log('Hidden Passphrase value set to:', $('#hiddenPassphrase').val());
                 $('#passphraseModal').modal('hide');
@@ -348,7 +352,7 @@
                             if (response.signature) {
                                 console.log('Nilai signature:', response.signature);
                             }
-                            $('#forceReplace').val('false');
+                            $('#force_replace').val('false');
                             // ✅ Show success message
                             showSuccessAlert(response.message);
 
@@ -387,7 +391,7 @@
                             }).then((result) => {
                                 if (result.isConfirmed) {
                                     // Set flag replace
-                                    $('#forceReplace').val('true');
+                                    $('#force_replace').val('true');
 
                                     // Kirim ulang request
                                     $('#confirmUploadBtn').trigger('click');
@@ -453,11 +457,11 @@
             // ✅ HELPER: Show success alert
             function showSuccessAlert(message) {
                 const alertHtml = `
-                                                                    <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-top: 15px;">
-                                                                        <i class="bi bi-check-circle me-2"></i>${message}
-                                                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                                                    </div>
-                                                                `;
+                                                                            <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-top: 15px;">
+                                                                                <i class="bi bi-check-circle me-2"></i>${message}
+                                                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                                                            </div>
+                                                                        `;
 
                 $('#ajaxAlertContainer').html(alertHtml);
                 $('html, body').animate({
@@ -489,11 +493,11 @@
             // ✅ HELPER: Show error alert
             function showErrorAlert(message) {
                 const alertHtml = `
-                                                                    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 15px;">
-                                                                        ${message}
-                                                                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                                                    </div>
-                                                                `;
+                                                                            <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 15px;">
+                                                                                ${message}
+                                                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                                                            </div>
+                                                                        `;
 
                 // Inject alert ke container
                 $('#ajaxAlertContainer').html(alertHtml);
@@ -522,19 +526,19 @@
                 const institutionId = existing?.institutionId || '-';
 
                 const html = `
-                                                <div class="text-start">
-                                                    <p class="mb-2">${message || 'Dokumen sudah tercatat di blockchain sebelumnya.'}</p>
-                                                    <ul class="mb-0" style="list-style:none; padding-left:0;">
-                                                        <li><strong>Tanggal Tercatat:</strong> ${createdAt}</li>
-                                                        <li><strong>Nama File:</strong> ${filename}</li>
-                                                        <li><strong>Jenis Dokumen:</strong> ${docType}</li>
-                                                        <li><strong>Status:</strong> ${status}</li>
-                                                        <li><strong>Hash:</strong> <code>${hash}</code></li>
-                                                        <li><strong>Student ID:</strong> ${studentId}</li>
-                                                        <li><strong>Institution ID:</strong> ${institutionId}</li>
-                                                    </ul>
-                                                </div>
-                                            `;
+                                                        <div class="text-start">
+                                                            <p class="mb-2">${message || 'Dokumen sudah tercatat di blockchain sebelumnya.'}</p>
+                                                            <ul class="mb-0" style="list-style:none; padding-left:0;">
+                                                                <li><strong>Tanggal Tercatat:</strong> ${createdAt}</li>
+                                                                <li><strong>Nama File:</strong> ${filename}</li>
+                                                                <li><strong>Jenis Dokumen:</strong> ${docType}</li>
+                                                                <li><strong>Status:</strong> ${status}</li>
+                                                                <li><strong>Hash:</strong> <code>${hash}</code></li>
+                                                                <li><strong>Student ID:</strong> ${studentId}</li>
+                                                                <li><strong>Institution ID:</strong> ${institutionId}</li>
+                                                            </ul>
+                                                        </div>
+                                                    `;
 
                 Swal.fire({
                     title: 'Dokumen Sudah Tercatat',

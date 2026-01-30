@@ -102,6 +102,15 @@ class DocumentController extends Controller
                 ->whereNull('deleted_at')
                 ->first();
 
+            // Block replace if the existing document is already verified on blockchain
+            if ($existingDocument && !is_null($existingDocument->tx_id)) {
+                return response()->json([
+                    'success' => false,
+                    'code'    => 'DOCUMENT_VERIFIED_IMMUTABLE',
+                    'message' => 'Dokumen telah diverifikasi di blockchain dan tidak dapat diganti.'
+                ], 409);
+            }
+
             if ($existingDocument && !$request->boolean('force_replace')) {
                 return response()->json([
                     'success' => false,
@@ -113,6 +122,18 @@ class DocumentController extends Controller
 
             // Jika user menyetujui replace
             if ($existingDocument && $request->boolean('force_replace')) {
+                // Delete old local storage file before replacing
+                try {
+                    if (!empty($existingDocument->file_path)) {
+                        Storage::disk('private')->delete($existingDocument->file_path);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('STORE: Failed to delete old file during replace', [
+                        'file_path' => $existingDocument->file_path ?? null,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
                 $existingDocument->update([
                     'deleted_at' => now()
                 ]);
