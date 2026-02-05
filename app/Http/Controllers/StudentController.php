@@ -12,6 +12,9 @@ use App\Models\User;
 use App\Models\Role; 
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth; 
+use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\StudentsImport;
 
 class StudentController extends Controller
 {
@@ -169,6 +172,44 @@ class StudentController extends Controller
 
         return redirect()->route('students.index')
             ->with('success', 'Data mahasiswa berhasil diperbarui.');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'faculty_id' => 'required|exists:faculties,id',
+            'program_study_id' => 'required|exists:program_studies,id',
+            'file' => 'required|file|mimes:xlsx,csv',
+        ]);
+
+        $admin = Auth::user();
+
+        DB::beginTransaction();
+
+        try {
+            Excel::import(
+                new StudentsImport(
+                    facultyId: $request->faculty_id,
+                    programStudyId: $request->program_study_id,
+                    institutionId: $admin->institution_id
+                ),
+                $request->file('file')
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Import mahasiswa berhasil',
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

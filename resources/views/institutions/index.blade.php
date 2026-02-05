@@ -194,7 +194,7 @@
                             <textarea class="form-control" id="alamat" name="alamat" rows="3"
                                 placeholder="Masukkan alamat lengkap institusi"></textarea>
                         </div>
-                        <div class="mb-3">
+                        {{-- <div class="mb-3">
                             <label for="passphrase" class="form-label fw-bold">Passphrase Admin *</label>
                             <div class="input-group">
                                 <input type="password" class="form-control" id="passphrase" name="passphrase" required
@@ -206,23 +206,23 @@
                             </div>
                             <small class="text-muted">Passphrase ini hanya diketahui admin. Gunakan kombinasi kuat dan
                                 jangan lupa untuk dicatat!</small>
-                        </div>
+                        </div> --}}
 
 
                         <!-- Certificate Section (Read-only untuk sekarang) -->
                         <div class="alert alert-info">
-                            <h6 class="alert-heading">
+                            <div class="col-md-6">
+                                <label class="form-label">Public Key Milik Institusi</label>
+                                <div class="form-control bg-light"
+                                    style="min-height: 80px; font-family: monospace; font-size: 0.8rem;">
+                                    [Public key akan digenerate otomatis]
+                                </div>
+                            </div>
+                            {{-- <h6 class="alert-heading">
                                 <i class="bi bi-key me-2"></i>Informasi Sertifikat
                             </h6>
-                            <p class="mb-2">Sertifikat akan digenerate otomatis setelah institusi dibuat.</p>
+                            <p class="mb-2">Sertifikat akan digenerate otomatis setelah institusi dibuat.</p> --}}
                             <div class="row mt-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Public Key</label>
-                                    <div class="form-control bg-light"
-                                        style="min-height: 80px; font-family: monospace; font-size: 0.8rem;">
-                                        [Public key akan digenerate otomatis]
-                                    </div>
-                                </div>
                                 {{-- <div class="col-md-6">
                                     <label class="form-label">CA Certificate</label>
                                     <div class="form-control bg-light"
@@ -240,8 +240,8 @@
                         <i class="bi bi-gear me-2"></i>Generate & Simpan
                     </button> --}}
 
-                    <button type="button" class="btn btn-success" id="btnGenerateCertificate">
-                        <i class="bi bi-gear me-2"></i>Generate & Simpan
+                    <button type="button" class="btn btn-primary" id="btnGenerateCertificate">
+                        <i class="bi bi-save me-2"></i>Daftarkan Institusi
                     </button>
 
                     {{-- <button type="button" class="btn btn-primary" onclick="submitInstitutionForm()">
@@ -412,22 +412,22 @@
                 }
 
                 // Pastikan passphrase minimal misal 8 karakter
-                const passphrase = formData.get('passphrase');
-                console.log('Passphrase:', passphrase);
+                // const passphrase = formData.get('passphrase');
+                // console.log('Passphrase:', passphrase);
 
-                if (!passphrase || passphrase.length < 8) {
-                    Swal.fire({
-                        title: "Passphrase terlalu pendek!",
-                        text: "Gunakan passphrase minimal 8 karakter.",
-                        icon: "warning",
-                        confirmButtonColor: "#dc3545"
-                    });
-                    return;
-                }
+                // if (!passphrase || passphrase.length < 8) {
+                //     Swal.fire({
+                //         title: "Passphrase terlalu pendek!",
+                //         text: "Gunakan passphrase minimal 8 karakter.",
+                //         icon: "warning",
+                //         confirmButtonColor: "#dc3545"
+                //     });
+                //     return;
+                // }
 
                 Swal.fire({
-                    title: "Generate Keypair & Simpan?",
-                    text: "Sistem akan membuat ECDSA keypair dan menyimpan institusi baru. Passphrase ini akan digunakan untuk mengamankan private key.",
+                    title: "Daftarkan Institusi ?",
+                    text: "Sistem akan mendaftarkan institusi baru dan membuatkan akun admin.",
                     icon: "question",
                     showCancelButton: true,
                     confirmButtonColor: "#198754",
@@ -470,11 +470,11 @@
                             Swal.fire({
                                 title: "Berhasil!",
                                 html: `
-                                        <p><strong>${formData.get('name')}</strong> berhasil ditambahkan!</p>
-                                        <p class="text-muted mb-0">✓ ECDSA Keypair telah digenerate</p>
-                                        <p class="text-muted mb-0">✓ Private key terenkripsi dengan passphrase</p>
-                                        <p class="text-muted mb-0">✓ Data institusi telah disimpan</p>
-                                    `,
+                                                            <p><strong>${formData.get('name')}</strong> berhasil ditambahkan!</p>
+                                                            <p class="text-muted mb-0">✓ Data institusi telah disimpan</p>
+                                                            <p class="text-muted mb-0">✓ Akun admin berhasil dibuat</p>
+                                                            <small class="text-danger mt-2 d-block">Admin harus login untuk generate Blockchain Keypair.</small>
+                                                        `,
                                 icon: "success",
                                 confirmButtonColor: "#198754",
                             }).then(() => {

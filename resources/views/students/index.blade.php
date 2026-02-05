@@ -10,6 +10,28 @@
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createStudentModal">
                 <i class="bi bi-person-plus me-2"></i>Tambah Mahasiswa
             </button>
+
+            <div class="btn-group">
+                <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown"
+                    aria-expanded="false">
+                    <i class="bi bi-file-earmark-arrow-up me-2"></i>Impor Mahasiswa
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="{{ route('students.template.download') }}">
+                            <i class="bi bi-download me-2"></i>Download Template
+                        </a>
+                    </li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li>
+                        <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#importStudentModal">
+                            <i class="bi bi-upload me-2"></i>Import File Excel
+                        </button>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -275,6 +297,63 @@
         </div>
     </div>
 
+    <!-- Import Student Modal -->
+    <div class="modal fade" id="importStudentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Impor Mahasiswa</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <form id="importStudentForm" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Fakultas *</label>
+                                <select class="form-select" id="importFaculty" name="faculty_id" required>
+                                    <option value="">Pilih Fakultas</option>
+                                    @foreach ($faculties as $faculty)
+                                        <option value="{{ $faculty->id }}">{{ $faculty->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Program Studi *</label>
+                                <select class="form-select" id="importProgramStudy" name="program_study_id" required
+                                    disabled>
+                                    <option value="">Pilih Program Studi</option>
+                                    @foreach ($programStudies as $programStudy)
+                                        <option value="{{ $programStudy->id }}">{{ $programStudy->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">File Excel *</label>
+                            <input type="file" class="form-control" name="file" accept=".xlsx,.xls" required>
+                            <small class="text-muted">
+                                Gunakan template resmi agar format sesuai.
+                            </small>
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload me-2"></i>Impor
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
         <script>
             document.getElementById('status').addEventListener('change', function () {
@@ -313,20 +392,26 @@
                         }]
                     });
                 @endif
-                                                    });
+                                                                                                                                                                            });
 
-            document.getElementById('faculty').addEventListener('change', function () {
-                const facultyId = this.value;
-                const programStudySelect = document.getElementById('program_study');
+            function loadProgramStudiesFor(facultySelectId, programSelectId) {
+                const facultySelect = document.getElementById(facultySelectId);
+                const programStudySelect = document.getElementById(programSelectId);
 
-                console.log(facultyId);
-                const url = `{{ url('/faculties/${facultyId}/program-studies') }}`;
-                console.log('Request URL:', url);
+                facultySelect.addEventListener('change', function () {
+                    const facultyId = this.value;
+                    // Build URL correctly: base path from Blade, append dynamic ID
+                    const base = '{{ url('/faculties') }}';
+                    const url = `${base}/${facultyId}/program-studies`;
 
-                programStudySelect.innerHTML = '<option value="">Pilih Program Studi</option>';
+                    // Reset options
+                    programStudySelect.innerHTML = '<option value="">Pilih Program Studi</option>';
 
-                if (facultyId) {
-                    // Show loading state with SweetAlert2
+                    if (!facultyId) {
+                        programStudySelect.disabled = true;
+                        return;
+                    }
+
                     Swal.fire({
                         title: 'Memuat Program Studi...',
                         allowOutsideClick: false,
@@ -335,47 +420,44 @@
                         }
                     });
 
-                    // Disable select while loading
                     programStudySelect.disabled = true;
 
                     fetch(url)
                         .then(response => {
-                            console.log('Response status:', response.status);
-                            console.log('Response headers:', response.headers);
                             if (!response.ok) {
                                 throw new Error('Gagal memuat data program studi');
                             }
                             return response.json();
                         })
                         .then(data => {
-                            console.log('Received data:', data);
                             if (Array.isArray(data) && data.length > 0) {
                                 data.forEach(ps => {
                                     programStudySelect.add(new Option(ps.name, ps.id));
                                 });
-                                // Close loading dialog on success
                                 Swal.close();
                             } else {
                                 throw new Error('Tidak ada program studi yang tersedia');
                             }
                         })
                         .catch(error => {
-                            console.error('Error details:', error);
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error!',
                                 text: error.message || 'Terjadi kesalahan saat memuat program studi',
                                 confirmButtonText: 'Tutup'
                             });
-
-                            // Add empty option to indicate error
                             programStudySelect.innerHTML = '<option value="">Error: Gagal memuat data</option>';
                         })
                         .finally(() => {
                             programStudySelect.disabled = false;
                         });
-                }
-            });
+                });
+            }
+
+            // Hook up for Create Student form
+            loadProgramStudiesFor('faculty', 'program_study');
+            // Hook up for Import modal
+            loadProgramStudiesFor('importFaculty', 'importProgramStudy');
 
             function editStudent(id) {
                 // Redirect to edit page or open edit modal
@@ -466,6 +548,53 @@
                         });
                     });
             }
+
+            document.getElementById('importStudentForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                const form = this;
+                const formData = new FormData(form);
+
+                Swal.fire({
+                    title: 'Mengimpor data...',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                fetch("{{ route('students.import') }}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                })
+                    .then(async response => {
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(data.message || 'Gagal import');
+                        }
+
+                        return data;
+                    })
+                    .then(data => {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil',
+                            text: data.message,
+                        }).then(() => {
+                            location.reload();
+                        });
+                    })
+                    .catch(error => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Import',
+                            text: error.message
+                        });
+                    });
+            });
         </script>
     @endpush
 @endsection

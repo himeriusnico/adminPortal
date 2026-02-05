@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name'); // <-- TAMBAHKAN ATAU PERBAIKI BARIS INI
             $table->string('email');
-            $table->text('public_key');
+            $table->text('public_key')->nullable();
             // $table->text('ca_cert');
             $table->timestamps();
         });

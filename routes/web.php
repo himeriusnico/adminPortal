@@ -9,6 +9,7 @@ use App\Http\Controllers\InstitutionController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\ProgramStudyController;
+use App\Http\Controllers\StudentTemplateController;
 use App\Models\Faculty;
 use App\Models\ProgramStudy;
 use Illuminate\Support\Facades\Auth;
@@ -70,6 +71,9 @@ Route::middleware('auth')->group(function () {
 // institutions.show (dengan wildcard) berada di urutan file di atas institutions.settings (yang spesifik), rute Super Admin menangkapnya.
 Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/institutions/settings', [InstitutionController::class, 'setting'])->name('institutions.settings');
+
+    Route::post('/institutions/generate-keys', [InstitutionController::class, 'generateKeyPair'])->name('institutions.generate-keys');
+    Route::post('/institution/view-private-key', [InstitutionController::class, 'viewPrivateKey'])->name('institution.view-private-key');
 });
 
 // == 3. RUTE SUPER ADMIN ==
@@ -105,6 +109,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/students', [StudentController::class, 'store'])->name('students.store');
     Route::get('/students/{student}/edit', [StudentController::class, 'edit'])->name('students.edit');
     Route::put('/students/{student}', [StudentController::class, 'update'])->name('students.update');
+    Route::post('/students/import', [StudentController::class, 'import'])->name('students.import');
     Route::delete('/students/{student}', [StudentController::class, 'destroy'])->name('students.destroy');
 
     // Unggah Dokumen (sesuai sidebar 'documents*')
@@ -131,6 +136,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
 
     Route::put('/institution/update-password', [InstitutionController::class, 'updatePassword'])
      ->name('institution.update-password');
+     
+    Route::get('/students/template/download', [StudentTemplateController::class, 'download'])
+    ->name('students.template.download');
 });
 
 // == 5. RUTE STUDENT ==

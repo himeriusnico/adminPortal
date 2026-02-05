@@ -208,6 +208,105 @@
         </div>
     </div>
 
+    <div class="card shadow-sm border-0 mt-4">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Blockchain Identity</h5>
+        </div>
+        <div class="card-body">
+            @php $inst = App\Models\Institution::find(Auth::user()->institution_id); @endphp
+
+            @if(!$inst->public_key)
+                <div class="alert alert-warning">
+                    <p>Identitas Blockchain belum dibuat. Anda perlu membuat Keypair sebelum dapat mengelola dokumen akademik.
+                    </p>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalGenerateKey">
+                        <i class="bi bi-key-fill me-1"></i> Generate Keypair
+                    </button>
+                </div>
+            @else
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Public Key (Identitas Publik)</label>
+                    <pre class="bg-light p-3 border rounded" style="font-size: 0.8rem;">{{ $inst->public_key }}</pre>
+                </div>
+            @endif
+
+            @if($inst->public_key)
+                <div class="mt-3">
+                    <button class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#modalViewKey">
+                        <i class="bi bi-eye me-1"></i> Lihat Private Key
+                    </button>
+                </div>
+            @endif
+
+            <div class="modal fade" id="modalViewKey" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content">
+                        <form id="formViewKey">
+                            @csrf
+                            <div class="modal-header bg-danger text-white">
+                                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>Private Key (JANGAN
+                                    DIBAGIKAN KE SIAPAPUN)
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div id="inputPassphraseWrapper">
+                                    <p class="text-muted">Masukkan passphrase Anda</p>
+                                    <div class="mb-3">
+                                        <label class="form-label">Passphrase</label>
+                                        <input type="password" name="passphrase" class="form-control" required>
+                                    </div>
+                                </div>
+
+                                <div id="keyDisplayWrapper" style="display: none;">
+                                    <label class="form-label fw-bold text-danger">Private Key Anda (Jangan
+                                        Sebarkan!):</label>
+                                    <textarea id="privateKeyArea" class="form-control bg-light font-monospace" rows="10"
+                                        readonly style="font-size: 0.8rem;"></textarea>
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-secondary" onclick="copyKey()">
+                                            <i class="bi bi-clipboard"></i> Salin ke Clipboard
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-danger" id="btnDecrypt">Dekripsi & Tampilkan</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalGenerateKey" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="formGenKey">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title">Generate Identitas Blockchain</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Buat Passphrase Keamanan</label>
+                            <input type="password" name="passphrase" class="form-control" required minlength="8"
+                                id="pass_input">
+                            <div class="form-text">Passphrase ini digunakan untuk mengenkripsi Private Key Anda. Jangan
+                                sampai lupa!</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary" id="btnSubmitKey">Simpan & Generate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Faculty Modal -->
     <div class="modal fade" id="addFacultyModal" tabindex="-1" aria-labelledby="addFacultyModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -556,7 +655,7 @@
                 Swal.fire({
                     title: 'Hapus Fakultas?',
                     html: `Anda akan menghapus fakultas <strong>"${name}"</strong>.<br><br>
-                                                              <span class="text-danger">Perhatian: Semua program studi di bawah fakultas ini juga akan terhapus!</span>`,
+                                                                                                                                                      <span class="text-danger">Perhatian: Semua program studi di bawah fakultas ini juga akan terhapus!</span>`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
@@ -678,6 +777,97 @@
                     }
                 });
             });
+
+            $(document).ready(function () {
+                $('#formGenKey').on('submit', function (e) {
+                    e.preventDefault(); // MENCEGAH RELOAD HALAMAN
+
+                    const formData = new FormData(this);
+                    const submitBtn = $('#btnSubmitKey');
+
+                    Swal.fire({
+                        title: 'Konfirmasi Generate',
+                        text: "Kunci kriptografi akan dibuat. Pastikan passphrase Anda aman.",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ya, Generate!',
+                        showLoaderOnConfirm: true,
+                        preConfirm: () => {
+                            return fetch("{{ route('institutions.generate-keys') }}", {
+                                method: 'POST',
+                                body: formData,
+                                headers: { 'X-CSRF-TOKEN': $('input[name="_token"]').val(), 'Accept': 'application/json' }
+                            })
+                                .then(response => {
+                                    if (!response.ok) return response.json().then(err => { throw new Error(err.message) });
+                                    return response.json();
+                                })
+                                .catch(error => { Swal.showValidationMessage(`Gagal: ${error.message}`); });
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed && result.value.success) {
+                            Swal.fire('Berhasil!', result.value.message, 'success').then(() => {
+                                // Penanganan Modal yang Aman
+                                const modalEl = document.getElementById('modalGenerateKey');
+                                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                                modal.hide();
+
+                                location.reload();
+                            });
+                        }
+                    });
+                });
+            });
+
+            $(document).ready(function () {
+                $('#formViewKey').on('submit', function (e) {
+                    e.preventDefault();
+                    const btn = $('#btnDecrypt');
+                    const formData = new FormData(this);
+
+                    btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Memproses...');
+
+                    fetch("{{ route('institution.view-private-key') }}", {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': $('input[name="_token"]').val(),
+                            'Accept': 'application/json'
+                        }
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                $('#inputPassphraseWrapper').hide();
+                                $('#btnDecrypt').hide();
+                                $('#keyDisplayWrapper').show();
+                                $('#privateKeyArea').val(data.private_key);
+                            } else {
+                                Swal.fire('Gagal', data.message, 'error');
+                            }
+                        })
+                        .catch(err => Swal.fire('Error', 'Terjadi kesalahan sistem', 'error'))
+                        .finally(() => {
+                            btn.prop('disabled', false).text('Dekripsi & Tampilkan');
+                        });
+                });
+
+                // Reset modal saat ditutup
+                $('#modalViewKey').on('hidden.bs.modal', function () {
+                    $('#inputPassphraseWrapper').show();
+                    $('#btnDecrypt').show();
+                    $('#keyDisplayWrapper').hide();
+                    $('#privateKeyArea').val('');
+                    $('#formViewKey')[0].reset();
+                });
+            });
+
+            function copyKey() {
+                const copyText = document.getElementById("privateKeyArea");
+                copyText.select();
+                document.execCommand("copy");
+                Swal.fire({ title: 'Tersalin!', icon: 'success', toast: true, position: 'top-end', timer: 2000, showConfirmButton: false });
+            }
         </script>
     @endpush
 @endsection

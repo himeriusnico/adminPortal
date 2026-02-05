@@ -32,169 +32,32 @@ class InstitutionController extends Controller
             'name' => 'required|string|max:255|unique:institutions,name',
             'email' => 'required|email|unique:institutions,email',
             'alamat' => 'nullable|string|max:255',
-            'passphrase' => 'required|string|min:8', 
+            // 'passphrase' => 'required|string|min:8', 
         ]);
 
         DB::beginTransaction();
 
         try {
-            // generate ECDSA keypair
-            try {
-                // catatan: eterministic only used when
-                // you must be able to recreate the same key from the same secret (wallet seeds, backup systems, HD wallets).
+            $institution = Institution::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'alamat' => $request->alamat,
+            ]);
 
-                $saltKey = getenv('MASTER_SECRET');
-                $userId = $request->user()->id;
-                $uniqueString = $userId . $request->email . microtime(true) . $saltKey;
-                $seed = hash('sha256', $uniqueString, true);
-
-                $ec = EC::createKey('secp256k1', $seed);
-                $privateKeyPem = $ec->toString('PKCS8');
-                $publicKeyPem = $ec->getPublicKey()->toString('PKCS8');
-
-                // non deterministic
-                // sebenernya pake ini aja udah aman soalnya CSPRNG dan karenaa...
-                // The private key is simply a random integer in [1, n-1] where n is the curve order (~10⁷⁷ possible values). 
-                // The chance of collision is astronomically small — about 1 in 2¹²⁸ for any two keys.
-                // source jurnal
-                // $ec = EC::createKey('secp256k1');
-
-                // $privateKeyPem = $ec->toString('PKCS8');
-                // $publicKeyPem  = $ec->getPublicKey()->toString('PKCS8');
-            } catch (Throwable $e) {
-                Log::error("Generate ECDSA keypair failed: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-                throw new \Exception("Gagal generate ECDSA keypair: " . $e->getMessage());
-            }
-
-            try {
-                $iv = random_bytes(16);
-                $salt = random_bytes(16);
-                $derivedKey = hash_pbkdf2('sha256', $request->passphrase, $salt, 100000, 32, true);
-
-
-                $encryptedPrivateKey = openssl_encrypt(
-                    $privateKeyPem,
-                    'AES-256-CBC',
-                    $derivedKey,
-                    0,
-                    $iv
-                );
-
-                unset($derivedKey, $privateKeyPem);
-            } catch (Throwable $e) {
-                Log::error("Encrypt private key failed: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-                throw new \Exception("Gagal mengenkripsi private key: " . $e->getMessage());
-            }
-
-            // simpan private key ke storage
-            // try {
-            //     $safeName = Str::slug($request->name, '_');
-            //     $directory = 'keys/institutions/';
-            //     $fileName = $safeName . '_private.pem';
-            //     $filePath = $directory . $fileName;
-
-            //     if (!Storage::exists($directory)) {
-            //         Storage::makeDirectory($directory);
-            //     }
-
-            //     Storage::put($filePath, $privateKeyPem);
-
-            //     // Atur permission file (opsional)
-            //     $fullPath = storage_path('app/' . $filePath);
-            //     if (file_exists($fullPath)) {
-            //         @chmod($fullPath, 0600);
-            //     }
-            // } catch (Throwable $e) {
-            //     throw new \Exception("Gagal menyimpan private key ke file: " . $e->getMessage());
-            // }
-
-            // simpan record institusi ke database
-            try {
-                $institution = Institution::create([
-                    'name' => $request->name,
-                    'email' => $request->email,
-                    'alamat' => $request->alamat,
-                    'public_key' => $publicKeyPem,
-                    // HARUS DITANYAKAN KE PAK MIFTAH PRIVATE KEY ENAKANYA GIMANA DISIMPANNYA
-                    // 'private_key_path' => $filePath,
-                    // 'ca_cert' => ''
-                ]);
-            } catch (Throwable $e) {
-                Log::error("Save institution failed: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-                throw new \Exception("Gagal menyimpan data institusi ke database: " . $e->getMessage());
-            }
-
-            // $newInstitutionId = $institution->id;
-
-            // // buat user admin untuk institusi
-            // try {
-            //     $directory = 'keys/institutions/';
-
-            //     // $institution_id = $institution->id;
-            //     $fileName = $newInstitutionId . "_private.pem";
-            //     $filePath = $directory . $fileName;
-
-            //     if (!Storage::disk('local')->exists($directory)) {
-            //         Storage::disk('local')->makeDirectory($directory);
-            //     }
-
-            //     Storage::disk('local')->put($filePath, $privateKeyPem);
-
-            //     $fullPath = storage_path('app/' . $filePath);
-            //     if (file_exists($fullPath)) {
-            //         @chmod($fullPath, 0600);
-            //     }
-            // } catch (Throwable $e) {
-            //     $institution->delete();
-            //     throw new \Exception("Gagal menyimpan private key ke file: " . $e->getMessage());
-            // }
-
-            try {
-                $encryptedKey = EncryptedKey::create([
-                    'institution_id' => $institution->id,
-                    'encrypted_private_key' => $encryptedPrivateKey,
-                    'iv' => bin2hex($iv),
-                    'salt' => bin2hex($salt),
-                    // 'created_by' => Auth::id(),
-                ]);
-
-                $institution->update(['encrypted_key_id' => $encryptedKey->id]);
-            } catch (Throwable $e) {
-                Log::error("Save encrypted key failed: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-                $institution->delete();
-                throw new \Exception("Gagal menyimpan data encrypted key: " . $e->getMessage());
-            }
-
-            try {
-                $adminRole = Role::where('name', 'admin')->first();
-
-                if (!$adminRole) {
-                    throw new \Exception("Role 'admin' tidak ditemukan di tabel roles.");
-                }
-
-                User::create([
-                    'name' => $request->name,
-                    'email' => $request->email,
-                    'password' => Hash::make('password'),
-                    'role_id' => $adminRole->id,
-                    'institution_id' => $institution->id
-                ]);
-            } catch (Throwable $e) {
-                Log::error("Create admin user failed: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
-                $institution->delete();
-                throw new \Exception("Gagal membuat user admin institusi: " . $e->getMessage());
-            }
+            $adminRole = Role::where('name', 'admin')->first();
+            User::create([
+                'name' => $request->name . ' Admin',
+                'email' => $request->email,
+                'password' => Hash::make("password"), // Password random, nanti di-reset oleh admin
+                'role_id' => $adminRole->id,
+                'institution_id' => $institution->id,
+            ]);
 
             DB::commit();
-
             return response()->json([
                 'success' => true,
-                'message' => 'Institusi berhasil ditambahkan, keypair dibuat dan dienkripsi.',
-                'data' => [
-                    'institution_id' => $institution->id,
-                    'public_key' => $publicKeyPem,
-                    'encrypted_key_id' => $encryptedKey->id
-                ]
+                'message' => 'Institusi berhasil ditambahkan',
+                'data' => $institution
             ]);
         } catch (Throwable $e) {
             Log::error("Store institution process failed: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
@@ -207,6 +70,118 @@ class InstitutionController extends Controller
         }
     }
 
+   public function generateKeyPair(Request $request)
+    {
+        $request->validate([
+            'passphrase' => 'required|string|min:8',
+        ]);
+
+        $user = Auth::user();
+        $institution = Institution::findOrFail($user->institution_id);
+
+        // Proteksi jika sudah ada key
+        if ($institution->public_key) {
+            return response()->json(['success' => false, 'message' => 'Keypair sudah ada.'], 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            // --- LOGIKA DETERMINISTIC PERSIS SEPERTI CODE LAMA ANDA ---
+            $saltKey = getenv('MASTER_SECRET');
+            $userId = $user->id;
+            // Kita gunakan email institusi agar konsisten
+            $uniqueString = $userId . $institution->email . microtime(true) . $saltKey;
+            $seed = hash('sha256', $uniqueString, true);
+
+            $ec = EC::createKey('secp256k1', $seed);
+            $privateKeyPem = $ec->toString('PKCS8');
+            $publicKeyPem = $ec->getPublicKey()->toString('PKCS8');
+
+            // --- LOGIKA ENKRIPSI ---
+            $iv = random_bytes(16);
+            $salt = random_bytes(16);
+            $derivedKey = hash_pbkdf2('sha256', $request->passphrase, $salt, 100000, 32, true);
+
+            $encryptedPrivateKey = openssl_encrypt(
+                $privateKeyPem,
+                'AES-256-CBC',
+                $derivedKey,
+                0,
+                $iv
+            );
+
+            // --- SIMPAN KE DATABASE ---
+            $encryptedKey = EncryptedKey::create([
+                'institution_id' => $institution->id,
+                'encrypted_private_key' => $encryptedPrivateKey,
+                'iv' => bin2hex($iv),
+                'salt' => bin2hex($salt),
+            ]);
+
+            $institution->update([
+                'public_key' => $publicKeyPem,
+                'encrypted_key_id' => $encryptedKey->id
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true, 
+                'message' => 'Keypair berhasil dibuat secara mandiri menggunakan metode deterministic.'
+            ]);
+
+        } catch (Throwable $e) {
+            DB::rollBack();
+            Log::error("Generate Keypair failed: " . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function viewPrivateKey(Request $request)
+    {
+        $request->validate([
+            'passphrase' => 'required|string',
+        ]);
+
+        $user = Auth::user();
+        $institution = Institution::with('encryptedKey')->findOrFail($user->institution_id);
+
+        if (!$institution->encryptedKey) {
+            return response()->json(['success' => false, 'message' => 'Data kunci tidak ditemukan.'], 404);
+        }
+
+        try {
+            $encryptedData = $institution->encryptedKey;
+            
+            // 1. Ambil IV dan Salt dari database (dalam bentuk hex ke binary)
+            $iv = hex2bin($encryptedData->iv);
+            $salt = hex2bin($encryptedData->salt);
+
+            // 2. Derivasi Key menggunakan passphrase yang diinput user
+            $derivedKey = hash_pbkdf2('sha256', $request->passphrase, $salt, 100000, 32, true);
+
+            // 3. Dekripsi menggunakan OpenSSL
+            $decryptedPrivateKey = openssl_decrypt(
+                $encryptedData->encrypted_private_key,
+                'AES-256-CBC',
+                $derivedKey,
+                0,
+                $iv
+            );
+
+            if ($decryptedPrivateKey === false) {
+                return response()->json(['success' => false, 'message' => 'Passphrase salah atau data korup.'], 401);
+            }
+
+            return response()->json([
+                'success' => true,
+                'private_key' => $decryptedPrivateKey
+            ]);
+
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+        }
+    }
     public function show(Institution $institution)
     {
         // return view('institutions.show', compact('institution'));
