@@ -31,7 +31,7 @@
     {{-- Container untuk AJAX error alerts --}}
     <div id="ajaxAlertContainer"></div>
 
-    <div class="card mb-4">
+    {{-- <div class="card mb-4">
         <div class="card-header">
             <h5 class="card-title mb-0"><i class="bi bi-upload me-2"></i>Unggah Dokumen Baru</h5>
         </div>
@@ -46,11 +46,11 @@
                             name="student_id" required>
                             <option value="" disabled selected>-- Pilih Mahasiswa --</option>
                             @forelse ($students as $student)
-                                <option value="{{ $student->id }}" {{ old('student_id') == $student->id ? 'selected' : '' }}>
-                                    {{ $student->user->name ?? 'User Hilang' }} (NIM: {{ $student->student_id }})
-                                </option>
+                            <option value="{{ $student->id }}" {{ old('student_id')==$student->id ? 'selected' : '' }}>
+                                {{ $student->user->name ?? 'User Hilang' }} (NIM: {{ $student->student_id }})
+                            </option>
                             @empty
-                                <option value="" disabled>Belum ada data mahasiswa di institusi Anda</option>
+                            <option value="" disabled>Belum ada data mahasiswa di institusi Anda</option>
                             @endforelse
                         </select>
                     </div>
@@ -61,9 +61,9 @@
                             name="document_type_id" required>
                             <option value="" disabled selected>-- Pilih Jenis --</option>
                             @foreach ($documentTypes as $type)
-                                <option value="{{ $type->id }}" {{ old('document_type_id') == $type->id ? 'selected' : '' }}>
-                                    {{ $type->name }}
-                                </option>
+                            <option value="{{ $type->id }}" {{ old('document_type_id')==$type->id ? 'selected' : '' }}>
+                                {{ $type->name }}
+                            </option>
                             @endforeach
                         </select>
                     </div>
@@ -82,6 +82,36 @@
                 <input type="hidden" name="passphrase" id="hiddenPassphrase" value="">
 
                 <input type="hidden" name="force_replace" id="force_replace" value="false">
+            </form>
+        </div>
+    </div> --}}
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0"><i class="bi bi-files me-2"></i>Upload Dokumen & Digital Sign</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info py-2">
+                <small><i class="bi bi-info-circle me-1"></i> Format Penamaan: <strong>NRP_JENISDOKUMEN.pdf</strong>
+                    (Contoh: 2003123_IJAZAH.pdf)</small>
+            </div>
+
+            <form action="{{ route('documents.store') }}" method="POST" enctype="multipart/form-data"
+                id="documentUploadForm">
+                @csrf
+                <div class="row align-items-end">
+                    <div class="col-md-9 mb-3">
+                        <label for="file" class="form-label">Pilih File PDF (Multiple) *</label>
+                        <input class="form-control" type="file" id="file" name="files[]" accept=".pdf" multiple required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal"
+                            data-bs-target="#passphraseModal">
+                            <i class="bi bi-shield-lock me-2"></i>Sign & Upload
+                        </button>
+                    </div>
+                </div>
+                <input type="hidden" name="passphrase" id="hiddenPassphrase" value="">
             </form>
         </div>
     </div>
@@ -289,47 +319,37 @@
                 const passphrase = inputPassphrase && inputPassphrase.length > 0 ? inputPassphrase : storedPassphrase;
                 const form = $('#documentUploadForm');
 
-                console.log('Passphrase modal value (input):', inputPassphrase);
-                console.log('Passphrase fallback (hidden):', storedPassphrase);
-                console.log('Using passphrase length:', (passphrase || '').length);
-
-                // Passphrase must be at least 8 chars (mirror backend)
                 if (!passphrase || passphrase.length < 8) {
-                    $('#passphrase-alert')
-                        .removeClass('d-none')
-                        .text('Passphrase wajib diisi (min. 8 karakter).');
-                    console.log('Validation failed: Passphrase too short or empty.');
+                    $('#passphrase-alert').removeClass('d-none').text('Passphrase wajib diisi (min. 8 karakter).');
                     return;
                 }
 
-                // Client-side file validation to avoid uploading large/invalid files
+                // ✅ VALIDASI MULTIPLE FILES
                 const fileInput = document.getElementById('file');
-                const file = fileInput?.files?.[0];
-                if (!file) {
-                    showErrorAlert('Silakan pilih file PDF untuk diunggah.');
-                    return;
-                }
-                const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
-                if (!isPdf) {
-                    showErrorAlert('File harus dalam bentuk PDF.');
-                    return;
-                }
-                const maxSize = 2 * 1024 * 1024; // 2MB
-                if (file.size > maxSize) {
-                    showErrorAlert('Ukuran file maksimal 2MB.');
+                const files = fileInput?.files;
+                if (!files || files.length === 0) {
+                    showErrorAlert('Silakan pilih setidaknya satu file PDF.');
                     return;
                 }
 
-                // Persist passphrase in hidden field so re-submits (e.g., after 409 duplicate) still work
+                for (let i = 0; i < files.length; i++) {
+                    const isPdf = files[i].type === 'application/pdf' || /\.pdf$/i.test(files[i].name);
+                    if (!isPdf) {
+                        showErrorAlert(`File "${files[i].name}" bukan PDF.`);
+                        return;
+                    }
+                    if (files[i].size > 2 * 1024 * 1024) { // 2MB
+                        showErrorAlert(`File "${files[i].name}" terlalu besar (Maks 2MB).`);
+                        return;
+                    }
+                }
+
                 $('#hiddenPassphrase').val(passphrase);
-                console.log('Hidden Passphrase value set to:', $('#hiddenPassphrase').val());
                 $('#passphraseModal').modal('hide');
 
                 const $btn = $(this);
-                $btn.prop('disabled', true).html(
-                    '<i class="bi bi-hourglass-split me-1"></i>Memproses...');
+                $btn.prop('disabled', true).html('<i class="bi bi-hourglass-split me-1"></i>Memproses...');
 
-                // ✅ SUBMIT VIA AJAX
                 const formData = new FormData(form[0]);
 
                 $.ajax({
@@ -338,107 +358,105 @@
                     data: formData,
                     processData: false,
                     contentType: false,
-                    dataType: 'json', // ✅ EXPECT JSON, not HTML
-                    timeout: 60000,
+                    dataType: 'json',
+                    timeout: 120000, // Tambah timeout untuk bulk
+                    success: function (response) {
+                        console.log('Bulk process result:', response);
 
-                    success: function (response, status, xhr) {
-                        console.log('Upload success!', response);
+                        // Bangun konten HTML untuk ringkasan
+                        let resultHtml = '<div class="text-start mt-3">';
 
-                        if (response.success) {
-                            // Bukti backend: tampilkan hash & signature di console
-                            if (response.hash) {
-                                console.log('Nilai hash:', response.hash);
-                            }
-                            if (response.signature) {
-                                console.log('Nilai signature:', response.signature);
-                            }
-                            $('#force_replace').val('false');
-                            // ✅ Show success message
-                            showSuccessAlert(response.message);
-
-                            // Clear form
-                            form[0].reset();
-                            $('#hiddenPassphrase').val('');
-
-                            // Reload page after 2 seconds to show updated table
-                            setTimeout(() => {
-                                location.reload();
-                            }, 2000);
-                        } else {
-                            showErrorAlert(response.message);
-                            resetUploadButton($btn);
+                        // 1. Tampilkan file yang GAGAL (Warna Merah)
+                        if (response.results.failed && response.results.failed.length > 0) {
+                            resultHtml += `
+                        <div class="alert alert-danger p-2 small">
+                            <strong><i class="bi bi-x-circle me-1"></i> Gagal (${response.counts.failed}):</strong>
+                            <ul class="mb-0 mt-1 pl-3">
+                                ${response.results.failed.map(msg => `<li>${msg}</li>`).join('')}
+                            </ul>
+                        </div>`;
                         }
+
+                        // 2. Tampilkan file yang BERHASIL (Warna Hijau)
+                        if (response.results.success && response.results.success.length > 0) {
+                            resultHtml += `
+                        <div class="alert alert-success p-2 small">
+                            <strong><i class="bi bi-check-circle me-1"></i> Berhasil (${response.counts.success}):</strong>
+                            <ul class="mb-0 mt-1 pl-3">
+                                ${response.results.success.map(msg => `<li>${msg}</li>`).join('')}
+                            </ul>
+                        </div>`;
+                        }
+                        resultHtml += '</div>';
+
+                        // Tentukan Ikon & Judul berdasarkan hasil
+                        let alertIcon = 'success';
+                        let alertTitle = 'Upload Berhasil';
+
+                        if (response.counts.failed > 0 && response.counts.success > 0) {
+                            alertIcon = 'warning';
+                            alertTitle = 'Selesai dengan Peringatan';
+                        } else if (response.counts.success === 0) {
+                            alertIcon = 'error';
+                            alertTitle = 'Proses Gagal Total';
+                        }
+
+                        Swal.fire({
+                            title: alertTitle,
+                            html: resultHtml,
+                            icon: alertIcon,
+                            confirmButtonText: 'Selesai',
+                            width: '600px' // Diperlebar agar list file terlihat jelas
+                        }).then(() => {
+                            location.reload();
+                        });
                     },
 
-                    error: function (xhr, status, error) {
-                        console.error('Upload error:', {
-                            status: xhr.status,
-                            statusText: xhr.statusText,
-                            error: error,
-                            response: xhr.responseJSON
-                        });
+                    // Ganti bagian error pada $.ajax di index.blade.php
+                    error: function (xhr) {
+                        console.error('Upload error:', xhr);
 
-                        // ⛔ Dokumen sudah ada (Business Rule Violation)
-                        if (xhr.status === 409 && xhr.responseJSON?.code === 'DOCUMENT_ALREADY_EXISTS') {
+                        const response = xhr.responseJSON;
+                        let alertTitle = 'Error!';
+                        let alertIcon = 'error';
+                        let resultHtml = '';
+
+                        // Jika server mengirimkan detail hasil (results.failed)
+                        if (response && response.results) {
+                            resultHtml = '<div class="text-start mt-3">';
+
+                            // Tampilkan daftar file yang GAGAL dengan detail alasannya
+                            if (response.results.failed && response.results.failed.length > 0) {
+                                resultHtml += `
+                        <div class="alert alert-danger p-2 small">
+                            <strong><i class="bi bi-x-circle me-1"></i> Gagal Diproses:</strong>
+                            <ul class="mb-0 mt-1 pl-3">
+                                ${response.results.failed.map(msg => `<li>${msg}</li>`).join('')}
+                            </ul>
+                        </div>`;
+                                alertTitle = 'Dokumen Gagal Validasi';
+                            }
+
+                            resultHtml += '</div>';
+
                             Swal.fire({
-                                title: 'Dokumen Sudah Ada',
-                                text: xhr.responseJSON.message,
-                                icon: 'warning',
-                                showCancelButton: true,
-                                confirmButtonText: 'Ya, Ganti Dokumen',
-                                cancelButtonText: 'Batal',
-                                reverseButtons: true
-                            }).then((result) => {
-                                if (result.isConfirmed) {
-                                    // Set flag replace
-                                    $('#force_replace').val('true');
-
-                                    // Kirim ulang request
-                                    $('#confirmUploadBtn').trigger('click');
-                                } else {
-                                    resetUploadButton($('#confirmUploadBtn'));
-                                }
+                                title: alertTitle,
+                                html: resultHtml,
+                                icon: alertIcon,
+                                confirmButtonText: 'Tutup',
+                                width: '600px'
                             });
-
-                            return; // ⛔ STOP error handler lain
-                        }
-
-                        let errorMsg = null;
-
-                        // Parse JSON error response
-                        if (xhr.responseJSON) {
-                            if (xhr.responseJSON.errors) {
-                                // Validation errors
-                                errorMsg = '<strong>Validasi Gagal:</strong><br>';
-                                $.each(xhr.responseJSON.errors, function (field, messages) {
-                                    if (messages && messages.length > 0) {
-                                        errorMsg += '- ' + messages[0] + '<br>';
-                                    }
-                                });
-                            } else if (xhr.responseJSON.message) {
-                                // Direct error message
-                                errorMsg = xhr.responseJSON.message;
-                            }
                         } else {
-                            // Fallback error messages
-                            if (xhr.status === 500) {
-                                errorMsg =
-                                    'Terjadi kesalahan di server. Silakan hubungi administrator.';
-                            } else if (xhr.status === 403) {
-                                errorMsg = 'Akses ditolak. Anda tidak memiliki izin.';
-                            } else if (xhr.status === 404) {
-                                errorMsg = 'Data tidak ditemukan.';
-                            } else {
-                                errorMsg = 'Gagal mengunggah dokumen: ' + error;
-                            }
+                            // Jika error sistem umum (misal 500 atau koneksi terputus)
+                            let errorMsg = response?.message || 'Terjadi kesalahan sistem saat memproses upload.';
+                            Swal.fire({
+                                title: 'Sistem Error',
+                                text: errorMsg,
+                                icon: 'error',
+                                confirmButtonColor: '#dc3545'
+                            });
                         }
 
-                        // Show error alert
-                        if (errorMsg) {
-                            showErrorAlert(errorMsg);
-                        }
-
-                        // Reset button
                         resetUploadButton($btn);
                     }
                 });
@@ -457,11 +475,11 @@
             // ✅ HELPER: Show success alert
             function showSuccessAlert(message) {
                 const alertHtml = `
-                                                                            <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-top: 15px;">
-                                                                                <i class="bi bi-check-circle me-2"></i>${message}
-                                                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                                                            </div>
-                                                                        `;
+                                                                                                                <div class="alert alert-success alert-dismissible fade show" role="alert" style="margin-top: 15px;">
+                                                                                                                    <i class="bi bi-check-circle me-2"></i>${message}
+                                                                                                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                                                                                                </div>
+                                                                                                            `;
 
                 $('#ajaxAlertContainer').html(alertHtml);
                 $('html, body').animate({
@@ -493,11 +511,11 @@
             // ✅ HELPER: Show error alert
             function showErrorAlert(message) {
                 const alertHtml = `
-                                                                            <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 15px;">
-                                                                                ${message}
-                                                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                                                            </div>
-                                                                        `;
+                                                                                                                <div class="alert alert-danger alert-dismissible fade show" role="alert" style="margin-top: 15px;">
+                                                                                                                    ${message}
+                                                                                                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                                                                                                </div>
+                                                                                                            `;
 
                 // Inject alert ke container
                 $('#ajaxAlertContainer').html(alertHtml);
@@ -526,19 +544,19 @@
                 const institutionId = existing?.institutionId || '-';
 
                 const html = `
-                                                        <div class="text-start">
-                                                            <p class="mb-2">${message || 'Dokumen sudah tercatat di blockchain sebelumnya.'}</p>
-                                                            <ul class="mb-0" style="list-style:none; padding-left:0;">
-                                                                <li><strong>Tanggal Tercatat:</strong> ${createdAt}</li>
-                                                                <li><strong>Nama File:</strong> ${filename}</li>
-                                                                <li><strong>Jenis Dokumen:</strong> ${docType}</li>
-                                                                <li><strong>Status:</strong> ${status}</li>
-                                                                <li><strong>Hash:</strong> <code>${hash}</code></li>
-                                                                <li><strong>Student ID:</strong> ${studentId}</li>
-                                                                <li><strong>Institution ID:</strong> ${institutionId}</li>
-                                                            </ul>
-                                                        </div>
-                                                    `;
+                                                                                            <div class="text-start">
+                                                                                                <p class="mb-2">${message || 'Dokumen sudah tercatat di blockchain sebelumnya.'}</p>
+                                                                                                <ul class="mb-0" style="list-style:none; padding-left:0;">
+                                                                                                    <li><strong>Tanggal Tercatat:</strong> ${createdAt}</li>
+                                                                                                    <li><strong>Nama File:</strong> ${filename}</li>
+                                                                                                    <li><strong>Jenis Dokumen:</strong> ${docType}</li>
+                                                                                                    <li><strong>Status:</strong> ${status}</li>
+                                                                                                    <li><strong>Hash:</strong> <code>${hash}</code></li>
+                                                                                                    <li><strong>Student ID:</strong> ${studentId}</li>
+                                                                                                    <li><strong>Institution ID:</strong> ${institutionId}</li>
+                                                                                                </ul>
+                                                                                            </div>
+                                                                                        `;
 
                 Swal.fire({
                     title: 'Dokumen Sudah Tercatat',
@@ -600,23 +618,37 @@
                         dataType: "json",
                         success: function (response) {
                             console.log("Blockchain response:", response);
+                            // if (response.success) {
+                            //     let resultHtml = '<div class="mt-3">';
 
+                            //     if (response.results.success.length > 0) {
+                            //         resultHtml += '<div class="text-success small"><strong>Berhasil:</strong><br>' +
+                            //             response.results.success.join('<br>') + '</div>';
+                            //     }
+
+                            //     if (response.results.failed.length > 0) {
+                            //         resultHtml += '<div class="text-danger small mt-2"><strong>Gagal:</strong><br>' +
+                            //             response.results.failed.join('<br>') + '</div>';
+                            //     }
+                            //     resultHtml += '</div>';
+
+                            //     Swal.fire({
+                            //         title: 'Bulk Processing Selesai',
+                            //         html: resultHtml,
+                            //         icon: 'info'
+                            //     }).then(() => {
+                            //         location.reload();
+                            //     });
+                            // } else {
+                            //     showErrorAlert(response.message);
+                            //     resetUploadButton($btn);
+                            // }
                             if (response.success) {
                                 showSuccessAlert(response.message);
-
-                                setTimeout(() => {
-                                    location.reload();
-                                }, 10000);
-                            } else if (response?.status === 'duplicate' && response?.existing) {
-                                showDuplicateAlert(response.existing, response.message);
-                                button.prop('disabled', false).html(
-                                    '<i class="bi bi-shield-check me-1"></i>Verifikasi'
-                                );
+                                setTimeout(() => { location.reload(); }, 2000);
                             } else {
                                 showErrorAlert(response.message || 'Gagal memverifikasi ke blockchain.');
-                                button.prop('disabled', false).html(
-                                    '<i class="bi bi-shield-check me-1"></i>Verifikasi'
-                                );
+                                button.prop('disabled', false).html('<i class="bi bi-shield-check me-1"></i>Verifikasi');
                             }
                         },
                         error: function (xhr) {

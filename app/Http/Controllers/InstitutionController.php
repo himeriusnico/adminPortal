@@ -127,7 +127,7 @@ class InstitutionController extends Controller
 
             return response()->json([
                 'success' => true, 
-                'message' => 'Keypair berhasil dibuat secara mandiri menggunakan metode deterministic.'
+                'message' => 'Keypair berhasil dibuat secara mandiri.'
             ]);
 
         } catch (Throwable $e) {

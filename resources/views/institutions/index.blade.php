@@ -210,7 +210,7 @@
 
 
                         <!-- Certificate Section (Read-only untuk sekarang) -->
-                        <div class="alert alert-info">
+                        {{-- <div class="alert alert-info">
                             <div class="col-md-6">
                                 <label class="form-label">Public Key Milik Institusi</label>
                                 <div class="form-control bg-light"
@@ -218,20 +218,20 @@
                                     [Public key akan digenerate otomatis]
                                 </div>
                             </div>
-                            {{-- <h6 class="alert-heading">
+                            <h6 class="alert-heading">
                                 <i class="bi bi-key me-2"></i>Informasi Sertifikat
                             </h6>
-                            <p class="mb-2">Sertifikat akan digenerate otomatis setelah institusi dibuat.</p> --}}
+                            <p class="mb-2">Sertifikat akan digenerate otomatis setelah institusi dibuat.</p>
                             <div class="row mt-3">
-                                {{-- <div class="col-md-6">
+                                <div class="col-md-6">
                                     <label class="form-label">CA Certificate</label>
                                     <div class="form-control bg-light"
                                         style="min-height: 80px; font-family: monospace; font-size: 0.8rem;">
                                         [CA certificate akan digenerate otomatis]
                                     </div>
-                                </div> --}}
+                                </div>
                             </div>
-                        </div>
+                        </div> --}}
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -470,11 +470,11 @@
                             Swal.fire({
                                 title: "Berhasil!",
                                 html: `
-                                                            <p><strong>${formData.get('name')}</strong> berhasil ditambahkan!</p>
-                                                            <p class="text-muted mb-0">✓ Data institusi telah disimpan</p>
-                                                            <p class="text-muted mb-0">✓ Akun admin berhasil dibuat</p>
-                                                            <small class="text-danger mt-2 d-block">Admin harus login untuk generate Blockchain Keypair.</small>
-                                                        `,
+                                                                    <p><strong>${formData.get('name')}</strong> berhasil ditambahkan!</p>
+                                                                    <p class="text-muted mb-0">✓ Data institusi telah disimpan</p>
+                                                                    <p class="text-muted mb-0">✓ Akun admin berhasil dibuat</p>
+                                                                    <small class="text-danger mt-2 d-block">Admin harus login untuk generate Blockchain Keypair.</small>
+                                                                `,
                                 icon: "success",
                                 confirmButtonColor: "#198754",
                             }).then(() => {

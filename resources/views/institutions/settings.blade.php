@@ -210,14 +210,14 @@
 
     <div class="card shadow-sm border-0 mt-4">
         <div class="card-header bg-dark text-white">
-            <h5 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Blockchain Identity</h5>
+            <h5 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Identitas Institusi</h5>
         </div>
         <div class="card-body">
             @php $inst = App\Models\Institution::find(Auth::user()->institution_id); @endphp
 
             @if(!$inst->public_key)
                 <div class="alert alert-warning">
-                    <p>Identitas Blockchain belum dibuat. Anda perlu membuat Keypair sebelum dapat mengelola dokumen akademik.
+                    <p>Identitas Institutsi belum dibuat. Anda perlu membuat Keypair sebelum dapat mengelola dokumen akademik.
                     </p>
                     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalGenerateKey">
                         <i class="bi bi-key-fill me-1"></i> Generate Keypair
@@ -287,7 +287,7 @@
                 <form id="formGenKey">
                     @csrf
                     <div class="modal-header">
-                        <h5 class="modal-title">Generate Identitas Blockchain</h5>
+                        <h5 class="modal-title">Generate Identitas Institusi</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
@@ -655,7 +655,7 @@
                 Swal.fire({
                     title: 'Hapus Fakultas?',
                     html: `Anda akan menghapus fakultas <strong>"${name}"</strong>.<br><br>
-                                                                                                                                                      <span class="text-danger">Perhatian: Semua program studi di bawah fakultas ini juga akan terhapus!</span>`,
+                                                                                                                                                              <span class="text-danger">Perhatian: Semua program studi di bawah fakultas ini juga akan terhapus!</span>`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',

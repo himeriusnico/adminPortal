@@ -35,211 +35,334 @@ class DocumentController extends Controller
         return view('documents.index', compact('students', 'documents', 'documentTypes', 'admin'));
     }
 
-    public function store(Request $request)
-    {
-        // 1. Validasi Input
-        $request->validate([
-            'student_id'       => 'required|integer|exists:students,id',
-            'document_type_id' => 'required|integer|exists:document_types,id',
-            'file'             => 'required|file|mimes:pdf|max:2048',
-            'passphrase'       => 'required|string|min:8',
-        ], [
-            'file.required' => 'Silakan pilih file PDF untuk diunggah.',
-            'file.max'      => 'Ukuran file maksimal 2MB.',
-            'file.file'     => 'File tidak valid. Silakan unggah file PDF.',
-            'file.mimes'    => 'File harus dalam bentuk PDF.'
-        ]);
+//     public function store(Request $request)
+//     {
+//         // 1. Validasi Input
+//         $request->validate([
+//             'student_id'       => 'required|integer|exists:students,id',
+//             'document_type_id' => 'required|integer|exists:document_types,id',
+//             'file'             => 'required|file|mimes:pdf|max:2048',
+//             'passphrase'       => 'required|string|min:8',
+//         ], [
+//             'file.required' => 'Silakan pilih file PDF untuk diunggah.',
+//             'file.max'      => 'Ukuran file maksimal 2MB.',
+//             'file.file'     => 'File tidak valid. Silakan unggah file PDF.',
+//             'file.mimes'    => 'File harus dalam bentuk PDF.'
+//         ]);
 
-        $startOffChain = microtime(true);
+//         $startOffChain = microtime(true);
 
-        try {
-            $admin = Auth::user();
-            if (!$admin) {
-                return response()->json(['success' => false, 'message' => 'Gagal mengambil data user'], 401);
-            }
+//         try {
+//             $admin = Auth::user();
+//             if (!$admin) {
+//                 return response()->json(['success' => false, 'message' => 'Gagal mengambil data user'], 401);
+//             }
 
-            $student = Student::find($request->student_id);
-            if (!$student) {
-                return response()->json(['success' => false, 'message' => 'Mahasiswa tidak ditemukan'], 404);
-            }
+//             $student = Student::find($request->student_id);
+//             if (!$student) {
+//                 return response()->json(['success' => false, 'message' => 'Mahasiswa tidak ditemukan'], 404);
+//             }
 
-            // Guard: Cek Institusi
-            if ($student->institution_id !== $admin->institution_id) {
-                Log::warning('STORE: Institution mismatch', [
-                    'admin_inst'   => $admin->institution_id,
-                    'student_inst' => $student->institution_id,
-                ]);
-                return response()->json([
-                    'success' => false, 
-                    'message' => 'Akses ditolak. Anda hanya dapat mengunggah untuk mahasiswa di institusi Anda.'
-                ], 403);
-            }
+//             // Guard: Cek Institusi
+//             if ($student->institution_id !== $admin->institution_id) {
+//                 Log::warning('STORE: Institution mismatch', [
+//                     'admin_inst'   => $admin->institution_id,
+//                     'student_inst' => $student->institution_id,
+//                 ]);
+//                 return response()->json([
+//                     'success' => false, 
+//                     'message' => 'Akses ditolak. Anda hanya dapat mengunggah untuk mahasiswa di institusi Anda.'
+//                 ], 403);
+//             }
 
-            $file = $request->file('file');
-            if (!$file) {
-                return response()->json(['success' => false, 'message' => 'File tidak ditemukan'], 400);
-            }
+//             $file = $request->file('file');
+//             if (!$file) {
+//                 return response()->json(['success' => false, 'message' => 'File tidak ditemukan'], 400);
+//             }
 
-            $institution = $admin->institution;
-            if (!$institution) {
-                Log::error('STORE: Institution NULL');
-                return response()->json(['success' => false, 'message' => 'Institusi admin tidak ditemukan'], 404);
-            }
+//             $institution = $admin->institution;
+//             if (!$institution) {
+//                 Log::error('STORE: Institution NULL');
+//                 return response()->json(['success' => false, 'message' => 'Institusi admin tidak ditemukan'], 404);
+//             }
 
-            $encryptedKey = $institution->encryptedKey;
-            if (!$encryptedKey || empty($encryptedKey->encrypted_private_key)) {
-                Log::error('STORE: Missing or empty encrypted key');
-                return response()->json([
-                    'success' => false, 
-                    'message' => 'Konfigurasi Error: Institution belum memiliki data kunci privat.'
-                ], 409);
-            }
+//             $encryptedKey = $institution->encryptedKey;
+//             if (!$encryptedKey || empty($encryptedKey->encrypted_private_key)) {
+//                 Log::error('STORE: Missing or empty encrypted key');
+//                 return response()->json([
+//                     'success' => false, 
+//                     'message' => 'Konfigurasi Error: Institution belum memiliki data kunci privat.'
+//                 ], 409);
+//             }
 
-            // BUSINESS RULE:
-// Satu student hanya boleh memiliki satu dokumen aktif per document_type
-            $existingDocument = Document::where('student_id', $student->id)
-                ->where('document_type_id', $request->document_type_id)
-                ->whereNull('deleted_at')
-                ->first();
+//             // BUSINESS RULE:
+// // Satu student hanya boleh memiliki satu dokumen aktif per document_type
+//             $existingDocument = Document::where('student_id', $student->id)
+//                 ->where('document_type_id', $request->document_type_id)
+//                 ->whereNull('deleted_at')
+//                 ->first();
 
-            // Block replace if the existing document is already verified on blockchain
-            if ($existingDocument && !is_null($existingDocument->tx_id)) {
-                return response()->json([
-                    'success' => false,
-                    'code'    => 'DOCUMENT_VERIFIED_IMMUTABLE',
-                    'message' => 'Dokumen telah diverifikasi di blockchain dan tidak dapat diganti.'
-                ], 409);
-            }
+//             // Block replace if the existing document is already verified on blockchain
+//             if ($existingDocument && !is_null($existingDocument->tx_id)) {
+//                 return response()->json([
+//                     'success' => false,
+//                     'code'    => 'DOCUMENT_VERIFIED_IMMUTABLE',
+//                     'message' => 'Dokumen telah diverifikasi di blockchain dan tidak dapat diganti.'
+//                 ], 409);
+//             }
 
-            if ($existingDocument && !$request->boolean('force_replace')) {
-                return response()->json([
-                    'success' => false,
-                    'code'    => 'DOCUMENT_ALREADY_EXISTS',
-                    'message' => 'Dokumen untuk jenis ini sudah ada. Apakah ingin mengganti?',
-                    'document_id' => $existingDocument->id
-                ], 409);
-            }
+//             if ($existingDocument && !$request->boolean('force_replace')) {
+//                 return response()->json([
+//                     'success' => false,
+//                     'code'    => 'DOCUMENT_ALREADY_EXISTS',
+//                     'message' => 'Dokumen untuk jenis ini sudah ada. Apakah ingin mengganti?',
+//                     'document_id' => $existingDocument->id
+//                 ], 409);
+//             }
 
-            // Jika user menyetujui replace
-            if ($existingDocument && $request->boolean('force_replace')) {
-                // Delete old local storage file before replacing
-                try {
-                    if (!empty($existingDocument->file_path)) {
-                        Storage::disk('private')->delete($existingDocument->file_path);
-                    }
-                } catch (\Throwable $e) {
-                    Log::warning('STORE: Failed to delete old file during replace', [
-                        'file_path' => $existingDocument->file_path ?? null,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
+//             // Jika user menyetujui replace
+//             if ($existingDocument && $request->boolean('force_replace')) {
+//                 // Delete old local storage file before replacing
+//                 try {
+//                     if (!empty($existingDocument->file_path)) {
+//                         Storage::disk('private')->delete($existingDocument->file_path);
+//                     }
+//                 } catch (\Throwable $e) {
+//                     Log::warning('STORE: Failed to delete old file during replace', [
+//                         'file_path' => $existingDocument->file_path ?? null,
+//                         'error' => $e->getMessage(),
+//                     ]);
+//                 }
 
-                $existingDocument->update([
-                    'deleted_at' => now()
-                ]);
-            }
+//                 $existingDocument->update([
+//                     'deleted_at' => now()
+//                 ]);
+//             }
 
-            // 2. Dekripsi Kunci Privat
-            $passphrase = $request->input('passphrase');
-            $derivedKey = hash_pbkdf2(
-                'sha256',
-                $passphrase,
-                hex2bin($encryptedKey->salt),
-                100000,
-                32,
-                true
-            );
+//             // 2. Dekripsi Kunci Privat
+//             $passphrase = $request->input('passphrase');
+//             $derivedKey = hash_pbkdf2(
+//                 'sha256',
+//                 $passphrase,
+//                 hex2bin($encryptedKey->salt),
+//                 100000,
+//                 32,
+//                 true
+//             );
 
-            $privateKeyPem = openssl_decrypt(
-                $encryptedKey->encrypted_private_key,
-                'aes-256-cbc',
-                $derivedKey,
-                0,
-                hex2bin($encryptedKey->iv)
-            );
+//             $privateKeyPem = openssl_decrypt(
+//                 $encryptedKey->encrypted_private_key,
+//                 'aes-256-cbc',
+//                 $derivedKey,
+//                 0,
+//                 hex2bin($encryptedKey->iv)
+//             );
 
-            if (!$privateKeyPem) {
-                Log::error('STORE: Dekripsi gagal. Passphrase salah.');
-                return response()->json([
-                    'success' => false, 
-                    'message' => 'Gagal mendekripsi kunci privat: Passphrase mungkin salah.'
-                ], 400);
-            }
+//             if (!$privateKeyPem) {
+//                 Log::error('STORE: Dekripsi gagal. Passphrase salah.');
+//                 return response()->json([
+//                     'success' => false, 
+//                     'message' => 'Gagal mendekripsi kunci privat: Passphrase mungkin salah.'
+//                 ], 400);
+//             }
 
-            // 3. Digital Signature (Penandatanganan)
-            try {
-                $hashValueBinary = hash_file('sha256', $file->getRealPath(), true);
+//             // 3. Digital Signature (Penandatanganan)
+//             try {
+//                 $hashValueBinary = hash_file('sha256', $file->getRealPath(), true);
                 
-                /** @var \phpseclib3\Crypt\EC\PrivateKey $privateKey */
-                $privateKey = EC::load($privateKeyPem);
-                $signature = $privateKey->sign($hashValueBinary);
-                $signatureBase64 = base64_encode($signature);
-            } catch (NoKeyLoadedException $e) {
-                return response()->json(['success' => false, 'message' => 'Gagal memuat private key: Kunci rusak.'], 400);
-            } catch (\Exception $e) {
-                return response()->json(['success' => false, 'message' => 'Signature error: ' . $e->getMessage()], 400);
-            }
+//                 /** @var \phpseclib3\Crypt\EC\PrivateKey $privateKey */
+//                 $privateKey = EC::load($privateKeyPem);
+//                 $signature = $privateKey->sign($hashValueBinary);
+//                 $signatureBase64 = base64_encode($signature);
+//             } catch (NoKeyLoadedException $e) {
+//                 return response()->json(['success' => false, 'message' => 'Gagal memuat private key: Kunci rusak.'], 400);
+//             } catch (\Exception $e) {
+//                 return response()->json(['success' => false, 'message' => 'Signature error: ' . $e->getMessage()], 400);
+//             }
 
-            // 4. Pengelolaan File & Cek Duplikasi
-            try {
-                $documentType = DocumentType::find($request->document_type_id);
-                $documentTypeName = $documentType?->name ?? 'dokumen';
-                $studentName = $student->user?->name ?? 'user';
+//             // 4. Pengelolaan File & Cek Duplikasi
+//             try {
+//                 $documentType = DocumentType::find($request->document_type_id);
+//                 $documentTypeName = $documentType?->name ?? 'dokumen';
+//                 $studentName = $student->user?->name ?? 'user';
 
-                $baseName = Str::slug($documentTypeName, '_') . '_' . Str::slug($studentName, '_');
-                $filename = $baseName . '.' . $file->getClientOriginalExtension();
+//                 $baseName = Str::slug($documentTypeName, '_') . '_' . Str::slug($studentName, '_');
+//                 $filename = $baseName . '.' . $file->getClientOriginalExtension();
 
-                $hashDocument = hash_file('sha256', $file->getRealPath());
+//                 $hashDocument = hash_file('sha256', $file->getRealPath());
 
-                // Cek hash duplikat
-                if (Document::where('hash', $hashDocument)->whereNull('deleted_at')->exists()) {
-                    return response()->json([
-                        'success' => false, 
-                        'message' => 'File yang diunggah tidak boleh sama dengan file terunggah sebelumnya.'
-                    ], 409);
-                }
+//                 // Cek hash duplikat
+//                 if (Document::where('hash', $hashDocument)->whereNull('deleted_at')->exists()) {
+//                     return response()->json([
+//                         'success' => false, 
+//                         'message' => 'File yang diunggah tidak boleh sama dengan file terunggah sebelumnya.'
+//                     ], 409);
+//                 }
 
-                $path = $file->storeAs('documents/' . $student->id, $filename, 'private');
-            } catch (\Exception $e) {
-                return response()->json(['success' => false, 'message' => 'Gagal menyimpan file: ' . $e->getMessage()], 500);
-            }
+//                 $path = $file->storeAs('documents/' . $student->id, $filename, 'private');
+//             } catch (\Exception $e) {
+//                 return response()->json(['success' => false, 'message' => 'Gagal menyimpan file: ' . $e->getMessage()], 500);
+//             }
 
-            // 5. Simpan ke Database
-            try {
-                $document = Document::create([
-                    'student_id'       => $student->id,
-                    'institution_id'   => $admin->institution_id,
-                    'filename'         => $filename,
-                    'document_type_id' => $request->document_type_id,
-                    'file_path'        => $path,
-                    'hash'             => $hashDocument,
-                    'signature'        => $signatureBase64,
-                ]);
+//             // 5. Simpan ke Database
+//             try {
+//                 $document = Document::create([
+//                     'student_id'       => $student->id,
+//                     'institution_id'   => $admin->institution_id,
+//                     'filename'         => $filename,
+//                     'document_type_id' => $request->document_type_id,
+//                     'file_path'        => $path,
+//                     'hash'             => $hashDocument,
+//                     'signature'        => $signatureBase64,
+//                 ]);
 
-                $durationOffChain = microtime(true) - $startOffChain;
-                Log::info("PERFORMANCE_TEST [Off-Chain]: Dokumen ID {$document->id} tersimpan.");
+//                 $durationOffChain = microtime(true) - $startOffChain;
+//                 Log::info("PERFORMANCE_TEST [Off-Chain]: Dokumen ID {$document->id} tersimpan.");
 
-                return response()->json([
-                    'success'    => true,
-                    'message'    => 'Dokumen berhasil diunggah.',
-                    'performance' => ['off_chain_duration_seconds' => $durationOffChain],
-                    'document_id' => $document->id,
-                    'hash'        => $hashDocument,
-                    'signature'   => $signatureBase64,
-                ], 200);
-            } catch (\Exception $e) {
-                return response()->json(['success' => false, 'message' => 'Database save error: ' . $e->getMessage()], 500);
-            }
+//                 return response()->json([
+//                     'success'    => true,
+//                     'message'    => 'Dokumen berhasil diunggah.',
+//                     'performance' => ['off_chain_duration_seconds' => $durationOffChain],
+//                     'document_id' => $document->id,
+//                     'hash'        => $hashDocument,
+//                     'signature'   => $signatureBase64,
+//                 ], 200);
+//             } catch (\Exception $e) {
+//                 return response()->json(['success' => false, 'message' => 'Database save error: ' . $e->getMessage()], 500);
+//             }
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['success' => false, 'message' => 'Validasi gagal', 'errors' => $e->errors()], 422);
-        } catch (\Exception $e) {
-            Log::error('STORE: Unexpected error', ['message' => $e->getMessage()]);
-            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
-        }
+//         } catch (\Illuminate\Validation\ValidationException $e) {
+//             return response()->json(['success' => false, 'message' => 'Validasi gagal', 'errors' => $e->errors()], 422);
+//         } catch (\Exception $e) {
+//             Log::error('STORE: Unexpected error', ['message' => $e->getMessage()]);
+//             return response()->json(['success' => false, 'message' => 'Terjadi kesalahan: ' . $e->getMessage()], 500);
+//         }
+//     }
+
+public function store(Request $request)
+{
+    // 1. Validasi Input (Array Files dengan Pesan Kustom)
+    $request->validate([
+        'files'        => 'required|array',
+        'files.*'      => 'file|mimes:pdf|max:2048', // 2MB
+        'passphrase'   => 'required|string|min:8',
+    ], [
+        'files.required' => 'Silakan pilih file PDF untuk diunggah.',
+        'files.*.max'      => 'Ukuran file maksimal 2MB.',
+        'files.*.file'     => 'File tidak valid. Silakan unggah file PDF.',
+        'files.*.mimes'    => 'File harus dalam bentuk PDF.'
+    ]);
+
+    $admin = Auth::user();
+    $institution = $admin->institution;
+    $encryptedKey = $institution->encryptedKey;
+
+    // 2. Dekripsi Kunci Privat (Dilakukan 1x di luar loop untuk efisiensi)
+    $derivedKey = hash_pbkdf2('sha256', $request->passphrase, hex2bin($encryptedKey->salt), 100000, 32, true);
+    $privateKeyPem = openssl_decrypt($encryptedKey->encrypted_private_key, 'aes-256-cbc', $derivedKey, 0, hex2bin($encryptedKey->iv));
+
+    if (!$privateKeyPem) {
+        return response()->json(['success' => false, 'message' => 'Gagal mendekripsi kunci privat: Passphrase mungkin salah.'], 400);
     }
 
-    public function viewDocument(Document $document)
+    $results = ['success' => [], 'failed' => []];
+
+    try {
+        $privateKey = EC::load($privateKeyPem);
+
+        foreach ($request->file('files') as $file) {
+            // -- MULAI PENCATATAN PERFORMANCE PER FILE --
+            $startOffChain = microtime(true);
+
+            $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME); // NRP_JENISDOKUMEN
+            $parts = explode('_', $originalName);
+
+            if (count($parts) < 2) {
+                $results['failed'][] = "[$originalName] Format nama file salah. Gunakan NRP_JENISDOKUMEN";
+                continue;
+            }
+
+            $nrp = $parts[0];
+            // Mengubah slug atau tanda minus kembali ke spasi jika perlu untuk pencarian database
+            $typeName = str_replace(['-', '_'], ' ', $parts[1]); 
+
+            // 3. Cari Mahasiswa berdasarkan student_id (NRP)
+            $student = Student::where('student_id', $nrp)
+                ->where('institution_id', $admin->institution_id)
+                ->first();
+
+            if (!$student) {
+                $results['failed'][] = "[$originalName] Mahasiswa NRP $nrp tidak ditemukan di institusi Anda.";
+                continue;
+            }
+
+            // 4. Cari Jenis Dokumen
+            $docType = DocumentType::where('name', 'LIKE', $typeName)->first();
+            if (!$docType) {
+                $results['failed'][] = "[$originalName] Jenis dokumen '$typeName' tidak ditemukan.";
+                continue;
+            }
+
+            // 5. Kalkulasi Hash & Sign
+            $hashDocument = hash_file('sha256', $file->getRealPath());
+            $hashValueBinary = hash_file('sha256', $file->getRealPath(), true);
+            $signatureBase64 = base64_encode($privateKey->sign($hashValueBinary));
+
+            // 6. Cek Duplikasi Hash (Business Rule)
+            if (Document::where('hash', $hashDocument)->whereNull('deleted_at')->exists()) {
+                $results['failed'][] = "[$originalName] File ini sudah pernah diunggah (Hash duplikat).";
+                continue;
+            }
+
+            // 7. Pengelolaan Path Folder Sesuai Permintaan
+            // Format: documents/institusi_{id}/{jenis_slug}/{nrp}/
+            $typeSlug = Str::slug($docType->name, '_');
+            $newFilename = $nrp . '_' . $typeSlug . '.pdf';
+            $folderPath = "documents/institusi_{$admin->institution_id}/{$typeSlug}/{$nrp}";
+            
+            $path = $file->storeAs($folderPath, $newFilename, 'private');
+
+            // 8. Simpan ke Database
+            $document = Document::create([
+                'student_id'       => $student->id,
+                'institution_id'   => $admin->institution_id,
+                'filename'         => $newFilename,
+                'document_type_id' => $docType->id,
+                'file_path'        => $path,
+                'hash'             => $hashDocument,
+                'signature'        => $signatureBase64,
+            ]);
+
+            // -- CATAT PERFORMANCE KE LOG --
+            $durationOffChain = microtime(true) - $startOffChain;
+            Log::info("PERFORMANCE_TEST [Off-Chain]: Dokumen ID {$document->id} (NRP: $nrp) tersimpan dalam " . round($durationOffChain, 4) . " detik.");
+
+            $results['success'][] = "$newFilename berhasil diproses.";
+        }
+
+    $successCount = count($results['success']);
+    $failedCount = count($results['failed']);
+
+    // Tentukan status akhir berdasarkan hasil loop
+    $isOverallSuccess = ($successCount > 0); 
+    $finalMessage = "Proses bulk selesai. ($successCount Berhasil, $failedCount Gagal)";
+
+    return response()->json([
+    'success' => ($successCount > 0), // True jika ada minimal 1 yang sukses
+    'message' => "Proses selesai: $successCount Berhasil, $failedCount Gagal",
+    'results' => $results,
+    'counts'  => [
+        'success' => $successCount,
+        'failed'  => $failedCount
+    ]
+], ($successCount > 0 ? 200 : 422));
+    } catch (\Exception $e) {
+        Log::error('BULK_STORE_ERROR: ' . $e->getMessage());
+        return response()->json(['success' => false, 'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()], 500);
+    }
+}    
+
+public function viewDocument(Document $document)
     {
         $admin = Auth::user();
 

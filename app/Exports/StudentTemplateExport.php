@@ -38,12 +38,14 @@ class StudentTemplateExport implements FromCollection, WithHeadings, WithEvents
                 $sheet = $event->sheet->getDelegate();
 
                 // Header tebal
-                $sheet->getStyle('A1:G1')->getFont()->setBold(true);
+                // $sheet->getStyle('A1:G1')->getFont()->setBold(true);
+                $sheet->getStyle('A1:G1');
 
                 // Auto width kolom
                 foreach (range('A', 'G') as $col) {
-                    $sheet->getColumnDimension($col)->setAutoSize(true);
-                }
+                    // $sheet->getColumnDimension($col)->setAutoSize(true);
+                    $sheet->getColumnDimension($col);
+                    }
 
                 // Dropdown status (sesuai UI)
                 $validation = new DataValidation();
